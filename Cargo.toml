@@ -2,5 +2,8 @@
 name = "project_cleaner"
 version = "0.1.0"
 edition = "2021"
+authors = ["Kacper0510 <wkacper@spoko.pl>", "jaanonim <mat8mro@gmail.com>"]
+publish = false
+rust-version = "1.80"  # LazyLock
 
 [dependencies]
