@@ -6,16 +6,13 @@ pub struct CargoTarget;
 pub const INSTANCE: CargoTarget = CargoTarget;
 
 impl Heuristic for CargoTarget {
-    fn filter(&self, entry: &Entry) -> bool {
-        entry.file_type().is_dir() && entry.file_name() == "target"
+    fn name(&self) -> &'static str {
+        "Rust/Cargo target directory"
     }
-
-    fn update_matches(&self, path: PathBuf, data: &mut HashMap<PathBuf, Vec<MatchInfo>>) {
-        if path.parent().unwrap().join("Cargo.toml").exists() {
-            data.entry(path).or_default().push(MatchInfo {
-                match_type: "Cargo target".into(),
-                weight: 1000,
-            });
+    
+    fn check_for_matches(&self, state: &mut MatchingState) {
+        if state.has_file("Cargo.toml").is_some() && state.has_directory("target").is_some() {
+            state.add_weight("target", 1000);
         }
     }
 }

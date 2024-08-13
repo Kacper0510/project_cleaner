@@ -1,18 +1,4 @@
-use std::{collections::HashMap, path::*};
-use jwalk::DirEntry;
-
-type Entry = DirEntry<((), ())>;
-
-#[derive(Debug, Clone)]
-pub struct MatchInfo {
-    pub match_type: String,
-    pub weight: i32,
-}
-
-pub trait Heuristic {
-    fn filter(&self, entry: &Entry) -> bool;
-    fn update_matches(&self, path: PathBuf, data: &mut HashMap<PathBuf, Vec<MatchInfo>>);
-}
+use crate::walker::{Heuristic, MatchingState};
 
 mod cargo_target;
 
