@@ -90,7 +90,7 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
     frame.render_stateful_widget(table, area, &mut app.table.state);
 }
 
-fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
+fn render_help(_app: &mut App, frame: &mut Frame, area: Rect) {
     let help = ["Scroll [↑↓]", "Delete [d]"]
         .iter()
         .map(|e| format!(" {e} "));
