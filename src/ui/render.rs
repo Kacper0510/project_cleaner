@@ -1,47 +1,114 @@
 use ratatui::{
-    layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    widgets::{Block, BorderType, Borders, List, ListDirection, ListState, Paragraph},
+    layout::{Alignment, Constraint, Direction, Flex, Layout, Rect},
+    style::{Color, Modifier, Style, Stylize},
+    widgets::{Block, BorderType, Paragraph, Row, Table},
     Frame,
 };
-use throbber_widgets_tui::{Throbber, ASCII};
+use unicode_segmentation::UnicodeSegmentation;
 
 use super::app::App;
 
-/// Renders the user interface widgets.
 pub fn render(app: &mut App, frame: &mut Frame) {
-    // This is where you add new widgets.
-    // See the following resources:
-    // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
-    // - https://github.com/ratatui-org/ratatui/tree/master/examples
-
     let layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![Constraint::Length(1), Constraint::Percentage(100)])
+        .constraints(vec![
+            Constraint::Length(5),
+            Constraint::Percentage(100),
+            Constraint::Length(1),
+        ])
         .split(frame.size());
 
+    render_header(app, frame, layout[0]);
+    render_table(app, frame, layout[1]);
+    render_help(app, frame, layout[2]);
+}
+
+fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
+    let header = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Length(64), Constraint::Length(30)])
+        .flex(Flex::SpaceBetween)
+        .split(area);
+
+    let info_header = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Length(2), Constraint::Length(1)])
+        .flex(Flex::Center)
+        .split(header[1]);
+
+    let spinner_box = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Length(13)])
+        .flex(Flex::Center)
+        .split(info_header[1]);
+
+    let logo = r#"   ___             _         __    _______                     
+  / _ \_______    (_)__ ____/ /_  / ___/ /__ ___ ____  ___ ____
+ / ___/ __/ _ \  / / -_) __/ __/ / /__/ / -_) _ `/ _ \/ -_) __/
+/_/  /_/  \___/_/ /\__/\__/\__/  \___/_/\__/\_,_/_//_/\__/_/   
+             |___/                                             "#;
+
+    let logo = Paragraph::new(logo);
+    frame.render_widget(logo, header[0]);
+
+    let logo = Paragraph::new(format!(
+        "Cleanable space: {}GB\nSaved space: {}GB",
+        1.24, 0.24
+    ))
+    .alignment(Alignment::Center);
+    frame.render_widget(logo, info_header[0]);
+
     let spinner = throbber_widgets_tui::Throbber::default()
-        .label("Running...")
+        .label("Scanning...")
         .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
         .use_type(throbber_widgets_tui::WhichUse::Spin);
-    frame.render_stateful_widget(spinner, layout[0], &mut app.throbber_state);
 
-    let items: Vec<String> = (0..100).map(|e| format!("Item number {e}")).collect();
-    let list = List::new(items)
-        .block(
-            Block::bordered()
-                .border_type(BorderType::Rounded)
-                .title_alignment(Alignment::Center)
-                .title(" Folders "),
-        )
-        .style(Style::default().fg(Color::White))
-        .highlight_style(
-            Style::default()
-                .bg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        )
-        .highlight_symbol(">")
-        .repeat_highlight_symbol(true);
+    frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
+}
 
-    frame.render_stateful_widget(list, layout[1], &mut app.list_state);
+fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
+    let widths = [
+        Constraint::Length(6),
+        Constraint::Percentage(100),
+        Constraint::Length(10),
+        Constraint::Length(10),
+    ];
+    let table_data = app.table.clone();
+    let table = Table::new(table_data.to_rows(), widths)
+        .column_spacing(1)
+        .header(
+            Row::new(vec!["", "Path", "Size", "Rating"]).style(
+                Style::default()
+                    .bg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        )
+        .block(Block::bordered().border_type(BorderType::Rounded))
+        .highlight_style(Style::default().reversed())
+        .highlight_symbol(" ");
+
+    frame.render_stateful_widget(table, area, &mut app.table.state);
+}
+
+fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
+    let help = ["Scroll [↑↓]", "Delete [d]"]
+        .iter()
+        .map(|e| format!(" {e} "));
+
+    let constraints = help
+        .clone()
+        .map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
+
+    let line = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(constraints)
+        .horizontal_margin(1)
+        .spacing(1)
+        .flex(Flex::Start)
+        .split(area);
+
+    for (i, h) in help.enumerate() {
+        let txt = Paragraph::new(h).fg(Color::Gray).bg(Color::DarkGray);
+        frame.render_widget(txt, line[i]);
+    }
 }

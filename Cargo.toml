@@ -11,3 +11,5 @@ clap = { version = "4.5.15", features = ["derive"] }
 ratatui = "0.27.0"
 jwalk = "0.5"
 throbber-widgets-tui = "0.6.0"
+size = "0.4.1"
+unicode-segmentation = "1.11.0"

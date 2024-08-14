@@ -483,7 +483,9 @@ dependencies = [
  "clap",
  "jwalk",
  "ratatui",
+ "size",
  "throbber-widgets-tui",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -622,6 +624,12 @@ checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "size"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fed904c7fb2856d868b92464fc8fa597fce366edea1a9cbfaa8cb5fe080bd6d"
 
 [[package]]
 name = "smallvec"
