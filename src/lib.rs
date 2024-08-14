@@ -1,4 +1,2 @@
-
-
 mod heuristics;
 mod walker;
