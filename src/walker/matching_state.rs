@@ -13,7 +13,7 @@ struct PathData<'entry> {
 
 pub struct MatchingState<'entries> {
     contents: HashMap<OsString, PathData<'entries>>,
-    pub current_heuristic: Option<&'static dyn Heuristic>,
+    pub(super) current_heuristic: Option<&'static dyn Heuristic>,
     pub important_files: &'entries mut Vec<PathBuf>,
 }
 
@@ -36,9 +36,17 @@ impl<'entries> MatchingState<'entries> {
     }
 
     pub(super) fn process_collected_data(&mut self, sender: &Sender<MarkedForDeletion>) {
-        for v in self.contents.values_mut() {
-            // TODO
+        for (_, v) in self.contents.drain() {
+            if v.weight <= 0 {
+                continue;
+            }
             v.entry.read_children_path = None;
+            let data = MarkedForDeletion {
+                path: v.entry.path(),
+                weight: v.weight,
+                reasons: v.reasons,
+            };
+            sender.send(data).expect("Sender error (did UI panic?)");
         }
     }
 
