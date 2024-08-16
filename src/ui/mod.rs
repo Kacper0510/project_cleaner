@@ -6,15 +6,17 @@ use ratatui::Terminal;
 use std::io;
 use tui::Tui;
 
+use crate::args::Args;
+
 mod app;
 mod event;
 mod handler;
 mod render;
 mod tui;
 
-pub fn run() -> AppResult<()> {
+pub fn run(args: Args) -> AppResult<()> {
     // Create an application.
-    let mut app = App::new();
+    let mut app = App::new(args);
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());

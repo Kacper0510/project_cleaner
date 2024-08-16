@@ -25,19 +25,23 @@ impl FolderData {
 pub struct LangData {
     pub name: &'static str,
     pub icon: &'static str,
+    pub short: &'static str,
 }
 
 impl LangData {
     pub const PYTHON: LangData = LangData {
         name: "Python",
         icon: "",
+        short: "py",
     };
     pub const RUST: LangData = LangData {
         name: "Rust",
         icon: "",
+        short: "rs",
     };
     pub const GIT: LangData = LangData {
         name: "Git",
         icon: "",
+        short: "git",
     };
 }

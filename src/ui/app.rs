@@ -4,7 +4,10 @@ use ratatui::widgets::{Cell, Row, TableState};
 use size::Size;
 use throbber_widgets_tui::ThrobberState;
 
-use crate::core::{FolderData, LangData};
+use crate::{
+    args::Args,
+    core::{FolderData, LangData},
+};
 
 /// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -12,6 +15,7 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 /// Application.
 #[derive(Debug)]
 pub struct App {
+    pub args: Args, // TODO: use args
     pub running: bool,
     pub table: TableData,
     pub throbber_state: ThrobberState,
@@ -22,7 +26,7 @@ pub struct TableData {
     pub data: Vec<FolderData>,
 }
 
-impl TableData {
+impl Default for TableData {
     fn default() -> Self {
         TableData {
             state: TableState::default().with_selected(0),
@@ -60,7 +64,9 @@ impl TableData {
             ],
         }
     }
+}
 
+impl TableData {
     pub fn to_rows(&self) -> Vec<Row> {
         self.data
             .iter()
@@ -83,25 +89,22 @@ impl TableData {
     }
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    /// Constructs a new instance of [`App`].
+    pub fn new(args: Args) -> Self {
         Self {
+            args,
             running: true,
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
         }
     }
-}
-
-impl App {
-    /// Constructs a new instance of [`App`].
-    pub fn new() -> Self {
-        Self::default()
-    }
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) {
         self.throbber_state.calc_next();
+
+        //TODO: read channel
     }
 
     /// Set running to false to quit the application.

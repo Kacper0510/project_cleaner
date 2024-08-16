@@ -1,7 +1,7 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
-    widgets::{Block, BorderType, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table},
     Frame,
 };
 use unicode_segmentation::UnicodeSegmentation;
@@ -21,6 +21,20 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     render_header(app, frame, layout[0]);
     render_table(app, frame, layout[1]);
     render_help(app, frame, layout[2]);
+
+    // TODO: Popup
+    // let popup_l1 = Layout::default()
+    //     .direction(Direction::Vertical)
+    //     .constraints(vec![Constraint::Percentage(60)])
+    //     .flex(Flex::Center)
+    //     .split(frame.size());
+    // let popup_l2 = Layout::default()
+    //     .direction(Direction::Horizontal)
+    //     .constraints(vec![Constraint::Percentage(60)])
+    //     .flex(Flex::Center)
+    //     .split(popup_l1[0]);
+
+    // render_popup(app, frame, popup_l2[0])
 }
 
 fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
@@ -91,7 +105,7 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
 }
 
 fn render_help(_app: &mut App, frame: &mut Frame, area: Rect) {
-    let help = ["Scroll [↑↓]", "Delete [d]"]
+    let help = ["Scroll [↑↓]", "Delete [d]", "Exit [q]"]
         .iter()
         .map(|e| format!(" {e} "));
 
@@ -111,4 +125,15 @@ fn render_help(_app: &mut App, frame: &mut Frame, area: Rect) {
         let txt = Paragraph::new(h).fg(Color::Gray).bg(Color::DarkGray);
         frame.render_widget(txt, line[i]);
     }
+}
+
+fn render_popup(_app: &mut App, frame: &mut Frame, area: Rect) {
+    frame.render_widget(Clear, area);
+    let txt = Paragraph::new("Hello!").block(
+        Block::bordered()
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Cyan))
+            .padding(Padding::uniform(1)),
+    );
+    frame.render_widget(txt, area)
 }
