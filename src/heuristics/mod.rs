@@ -1,4 +1,4 @@
-use crate::walker::{Heuristic, MatchingState};
+use crate::core::{Heuristic, MatchingState};
 
 mod cargo_target;
 
