@@ -1,4 +1,4 @@
-use std::{error, path::PathBuf};
+use std::error;
 
 use ratatui::widgets::{Cell, Row, TableState};
 use size::Size;
@@ -6,7 +6,7 @@ use throbber_widgets_tui::ThrobberState;
 
 use crate::{
     args::Args,
-    core::{FolderData, LangData},
+    core::{LangData, MatchData},
 };
 
 /// Application result type.
@@ -20,50 +20,23 @@ pub struct App {
     pub table: TableData,
     pub throbber_state: ThrobberState,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TableData {
     pub state: TableState,
-    pub data: Vec<FolderData>,
+    pub data: Vec<MatchDataUI>,
 }
 
-impl Default for TableData {
-    fn default() -> Self {
-        TableData {
-            state: TableState::default().with_selected(0),
-            data: vec![
-                FolderData::new(
-                    PathBuf::from("/mnt/dane/Programowanie/rust/project_cleaner/src/ui/"),
-                    10,
-                    Size::from_mb(12),
-                    vec![LangData::PYTHON],
-                ),
-                FolderData::new(
-                    PathBuf::from("/mnt/dane/Programowanie/rust/project_cleaner/src/ui/"),
-                    3,
-                    Size::from_kb(14),
-                    vec![LangData::RUST, LangData::GIT],
-                ),
-                FolderData::new(
-                    PathBuf::from("/mnt/dane/Programowanie/rust/project_cleaner/src/ui/"),
-                    7,
-                    Size::from_gb(1.2),
-                    vec![],
-                ),
-                FolderData::new(
-                    PathBuf::from("/mnt/dane/Programowanie/rust/project_cleaner/src/ui/"),
-                    2,
-                    Size::from_mb(343),
-                    vec![LangData::GIT],
-                ),
-                FolderData::new(
-                    PathBuf::from("/mnt/dane/Programowanie/rust/project_cleaner/src/ui/"),
-                    8,
-                    Size::from_mb(2148),
-                    vec![],
-                ),
-            ],
-        }
-    }
+#[derive(Debug, Clone)]
+pub struct MatchDataUI {
+    pub data: MatchData,
+    pub size: Option<Size>,
+    pub status: MatchDataUIStatus,
+}
+
+#[derive(Debug, Clone)]
+enum MatchDataUIStatus {
+    FOUND,
+    DELETED,
 }
 
 impl TableData {
@@ -71,18 +44,13 @@ impl TableData {
         self.data
             .iter()
             .map(|ele| {
-                let icons = ele
-                    .langs
-                    .iter()
-                    .map(|e| e.icon.to_owned())
-                    .collect::<Vec<String>>()
-                    .join(" ");
+                let icons = ele.data.reasons.iter().map(|e| e.icon.to_owned()).collect::<Vec<String>>().join(" ");
 
                 Row::new(vec![
                     Cell::new(icons),
-                    Cell::new(ele.path.display().to_string()),
-                    Cell::new(format!("{}", ele.size)),
-                    Cell::new(format!("{}", ele.rating)),
+                    Cell::new(ele.data.path.display().to_string()),
+                    Cell::new(if let Some(s) = ele.size { format!("{}", s) } else { "---".to_owned() }),
+                    Cell::new("lol"),
                 ])
             })
             .collect()
@@ -104,7 +72,7 @@ impl App {
     pub fn tick(&mut self) {
         self.throbber_state.calc_next();
 
-        //TODO: read channel
+        // TODO: read channel
     }
 
     /// Set running to false to quit the application.
@@ -113,23 +81,26 @@ impl App {
     }
 
     pub fn list_up(&mut self) {
-        self.table.state.select(
-            self.table
-                .state
-                .selected()
-                .map(|e| if e == 0 { 0 } else { e - 1 }),
-        );
+        if self.table.data.is_empty() {
+            self.table.state.select(None);
+            return;
+        }
+
+        self.table.state.select(self.table.state.selected().map(|e| if e == 0 { 0 } else { e - 1 }));
     }
 
     pub fn list_down(&mut self) {
-        self.table
-            .state
-            .select(self.table.state.selected().map(|e| {
-                if e >= self.table.data.len() - 1 {
-                    self.table.data.len() - 1
-                } else {
-                    e + 1
-                }
-            }));
+        if self.table.data.is_empty() {
+            self.table.state.select(None);
+            return;
+        }
+
+        self.table.state.select(self.table.state.selected().map(|e| {
+            if e >= self.table.data.len() - 1 {
+                self.table.data.len() - 1
+            } else {
+                e + 1
+            }
+        }));
     }
 }

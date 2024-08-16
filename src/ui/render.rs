@@ -11,11 +11,7 @@ use super::app::App;
 pub fn render(app: &mut App, frame: &mut Frame) {
     let layout = Layout::default()
         .direction(Direction::Vertical)
-        .constraints(vec![
-            Constraint::Length(5),
-            Constraint::Percentage(100),
-            Constraint::Length(1),
-        ])
+        .constraints(vec![Constraint::Length(5), Constraint::Percentage(100), Constraint::Length(1)])
         .split(frame.size());
 
     render_header(app, frame, layout[0]);
@@ -23,18 +19,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     render_help(app, frame, layout[2]);
 
     // TODO: Popup
-    // let popup_l1 = Layout::default()
-    //     .direction(Direction::Vertical)
-    //     .constraints(vec![Constraint::Percentage(60)])
-    //     .flex(Flex::Center)
-    //     .split(frame.size());
-    // let popup_l2 = Layout::default()
-    //     .direction(Direction::Horizontal)
-    //     .constraints(vec![Constraint::Percentage(60)])
-    //     .flex(Flex::Center)
-    //     .split(popup_l1[0]);
-
-    // render_popup(app, frame, popup_l2[0])
+    // render_popup(app, frame, frame.size())
 }
 
 fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
@@ -65,11 +50,8 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
     let logo = Paragraph::new(logo);
     frame.render_widget(logo, header[0]);
 
-    let logo = Paragraph::new(format!(
-        "Cleanable space: {}GB\nSaved space: {}GB",
-        1.24, 0.24
-    ))
-    .alignment(Alignment::Center);
+    let logo =
+        Paragraph::new(format!("Cleanable space: {}GB\nSaved space: {}GB", 1.24, 0.24)).alignment(Alignment::Center);
     frame.render_widget(logo, info_header[0]);
 
     let spinner = throbber_widgets_tui::Throbber::default()
@@ -81,21 +63,13 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
 }
 
 fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
-    let widths = [
-        Constraint::Length(6),
-        Constraint::Percentage(100),
-        Constraint::Length(10),
-        Constraint::Length(10),
-    ];
+    let widths = [Constraint::Length(6), Constraint::Percentage(100), Constraint::Length(10), Constraint::Length(10)];
     let table_data = app.table.clone();
     let table = Table::new(table_data.to_rows(), widths)
         .column_spacing(1)
         .header(
-            Row::new(vec!["", "Path", "Size", "Rating"]).style(
-                Style::default()
-                    .bg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            ),
+            Row::new(vec!["", "Path", "Size", "Rating"])
+                .style(Style::default().bg(Color::Cyan).add_modifier(Modifier::BOLD)),
         )
         .block(Block::bordered().border_type(BorderType::Rounded))
         .highlight_style(Style::default().reversed())
@@ -105,13 +79,9 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
 }
 
 fn render_help(_app: &mut App, frame: &mut Frame, area: Rect) {
-    let help = ["Scroll [↑↓]", "Delete [d]", "Exit [q]"]
-        .iter()
-        .map(|e| format!(" {e} "));
+    let help = ["Scroll [↑↓]", "Delete [d]", "Exit [q]"].iter().map(|e| format!(" {e} "));
 
-    let constraints = help
-        .clone()
-        .map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
+    let constraints = help.clone().map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
 
     let line = Layout::default()
         .direction(Direction::Horizontal)
@@ -128,12 +98,23 @@ fn render_help(_app: &mut App, frame: &mut Frame, area: Rect) {
 }
 
 fn render_popup(_app: &mut App, frame: &mut Frame, area: Rect) {
-    frame.render_widget(Clear, area);
+    let popup_l1 = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(vec![Constraint::Percentage(60)])
+        .flex(Flex::Center)
+        .split(area);
+    let popup_l2 = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Percentage(60)])
+        .flex(Flex::Center)
+        .split(popup_l1[0]);
+
+    frame.render_widget(Clear, popup_l2[0]);
     let txt = Paragraph::new("Hello!").block(
         Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::Cyan))
             .padding(Padding::uniform(1)),
     );
-    frame.render_widget(txt, area)
+    frame.render_widget(txt, popup_l2[0])
 }
