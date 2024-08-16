@@ -2,9 +2,8 @@ use ratatui::{
     style::{Color, Stylize},
     widgets::{Cell, Row, TableState},
 };
-use size::Size;
 
-use crate::core::MatchData;
+use crate::core::{dir_stats::DirStats, MatchData};
 
 #[derive(Debug, Clone, Default)]
 pub struct TableData {
@@ -15,7 +14,7 @@ pub struct TableData {
 #[derive(Debug, Clone)]
 pub struct MatchDataUI {
     pub data: MatchData,
-    pub size: Option<Size>,
+    pub dir_stats: DirStats,
     status: MatchDataUIStatus,
 }
 
@@ -41,8 +40,12 @@ impl TableData {
                 let row = Row::new(vec![
                     Cell::new(icons),
                     Cell::new(ele.data.path.display().to_string()),
-                    Cell::new(if let Some(s) = ele.size { format!("{}", s) } else { "---".to_owned() }),
-                    Cell::new("lol"),
+                    Cell::new(if let Some(s) = &ele.dir_stats.last_mod_days() {
+                        format!("{}d", s)
+                    } else {
+                        "---".to_owned()
+                    }),
+                    Cell::new(if let Some(s) = &ele.dir_stats.size { format!("{}", s) } else { "---".to_owned() }),
                 ]);
                 if ele.status == MatchDataUIStatus::Deleted {
                     row.bg(Color::Red)
@@ -60,7 +63,7 @@ impl TableData {
 
         self.data.push(MatchDataUI {
             data,
-            size: None,
+            dir_stats: DirStats::default(),
             status: MatchDataUIStatus::Found,
         });
     }

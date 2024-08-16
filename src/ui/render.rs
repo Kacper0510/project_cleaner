@@ -54,15 +54,18 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
         Paragraph::new(format!("Cleanable space: {}GB\nSaved space: {}GB", 1.24, 0.24)).alignment(Alignment::Center);
     frame.render_widget(logo, info_header[0]);
 
-    match app.state {
-        AppState::Scanning => {
-            let spinner = throbber_widgets_tui::Throbber::default()
-                .label("Scanning...")
-                .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
-                .use_type(throbber_widgets_tui::WhichUse::Spin);
+    let mut make_spinner = |name: &str| {
+        let spinner = throbber_widgets_tui::Throbber::default()
+            .label(name)
+            .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
+            .use_type(throbber_widgets_tui::WhichUse::Spin);
 
-            frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
-        },
+        frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
+    };
+
+    match app.state {
+        AppState::Scanning => make_spinner("Scanning..."),
+        AppState::Calculating => make_spinner("Calculating..."),
         AppState::Done => {
             let logo = Paragraph::new("    Done     ");
             frame.render_widget(logo, spinner_box[0]);
@@ -76,7 +79,7 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
     let table = Table::new(table_data.to_rows(app.args.no_icons), widths)
         .column_spacing(1)
         .header(
-            Row::new(vec!["", "Path", "Size", "Rating"])
+            Row::new(vec!["", "Path", "LastMod", "Size"])
                 .style(Style::default().bg(Color::Cyan).add_modifier(Modifier::BOLD)),
         )
         .block(Block::bordered().border_type(BorderType::Rounded))

@@ -1,6 +1,17 @@
 use super::model::TableData;
-use crate::{args::Args, core::MatchData, walk_directories};
-use std::{env, error, sync::mpsc::Receiver};
+use crate::{
+    args::Args,
+    core::{
+        dir_stats::{dir_stats_parallel, DirStats},
+        MatchData,
+    },
+    walk_directories,
+};
+use std::{
+    env, error,
+    sync::mpsc::{Receiver, Sender},
+    thread::JoinHandle,
+};
 use throbber_widgets_tui::ThrobberState;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
@@ -9,50 +20,70 @@ pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 pub enum AppState {
     Scanning,
+    Calculating,
     Done,
 }
 
+type Channel<T> = (Sender<T>, Receiver<T>);
+
 #[derive(Debug)]
 pub struct App {
-    pub args: Args, // TODO: use args
+    pub args: Args,
     pub running: bool,
     pub table: TableData,
     pub throbber_state: ThrobberState,
     pub state: AppState,
-    pub receiver: Receiver<MatchData>,
-    pub handle: std::thread::JoinHandle<()>,
+    pub dir_stats_channel: Channel<(usize, DirStats)>,
+    pub walker_channel: Channel<MatchData>,
+    pub handle: Vec<JoinHandle<()>>,
 }
 
 impl App {
     /// Constructs a new instance of [`App`].
     pub fn new(args: Args) -> Self {
-        let (sender, receiver) = std::sync::mpsc::channel();
-
-        let path = args.path.clone().unwrap_or(env::current_dir().unwrap());
-
-        let handle = std::thread::spawn(move || walk_directories(&path, sender, |_path| {}));
-
         Self {
             args,
             running: true,
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
             state: AppState::Scanning,
-            receiver,
-            handle,
+            dir_stats_channel: std::sync::mpsc::channel(),
+            walker_channel: std::sync::mpsc::channel(),
+            handle: vec![],
         }
+    }
+
+    pub fn run(&mut self) {
+        let path = self.args.path.clone().unwrap_or(env::current_dir().unwrap());
+        let tx = self.walker_channel.0.clone();
+        let handle = std::thread::spawn(move || walk_directories(&path, tx, |_path| {}));
+        self.handle.push(handle);
     }
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) {
         self.throbber_state.calc_next();
 
-        while let Ok(data) = self.receiver.try_recv() {
+        while let Ok(data) = self.walker_channel.1.try_recv() {
             self.table.add_match(data);
         }
 
-        if self.handle.is_finished() && self.state == AppState::Scanning {
-            self.state = AppState::Done;
+        while let Ok((idx, data)) = self.dir_stats_channel.1.try_recv() {
+            self.table.data[idx].dir_stats = data;
+        }
+
+        if self.handle.iter().all(|h| h.is_finished()) {
+            self.handle = vec![];
+            self.state = match self.state {
+                AppState::Scanning => {
+                    self.handle = dir_stats_parallel(
+                        self.table.data.clone().into_iter().map(|ele| ele.data.path).enumerate().collect(),
+                        self.dir_stats_channel.0.clone(),
+                    );
+                    AppState::Calculating
+                },
+                AppState::Done | AppState::Calculating => AppState::Done,
+            }
         }
     }
 
