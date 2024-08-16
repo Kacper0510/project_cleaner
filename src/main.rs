@@ -1,7 +1,7 @@
 use clap::Parser;
-use project_cleaner::args::Args;
+use project_cleaner::{args::Args, ui::run};
 
 fn main() {
     let args = Args::parse();
-    let _ = project_cleaner::ui::run(args);
+    let _ = run(args);
 }
