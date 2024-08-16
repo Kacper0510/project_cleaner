@@ -1,0 +1,23 @@
+# Needs to be used with nightly rustfmt
+unstable_features = true
+
+# Stable features
+edition = "2021"
+match_block_trailing_comma = true
+max_width = 120
+use_field_init_shorthand = true
+use_small_heuristics = "Max"
+use_try_shorthand = true
+
+# Unstable features
+brace_style = "PreferSameLine"
+condense_wildcard_suffixes = true
+format_code_in_doc_comments = true
+doc_comment_code_block_width = 120
+hex_literal_case = "Lower"
+imports_granularity = "Crate"
+normalize_comments = true
+overflow_delimited_expr = true
+reorder_impl_items = true
+struct_lit_single_line = false
+where_single_line = true

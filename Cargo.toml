@@ -9,4 +9,4 @@ rust-version = "1.80"  # LazyLock
 [dependencies]
 clap = { version = "4.5.15", features = ["derive"] }
 ratatui = "0.28.0"
-jwalk = "0.5"
+jwalk = "0.8.1"
