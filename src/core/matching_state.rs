@@ -1,4 +1,4 @@
-use super::{Entry, Heuristic, MarkedForDeletion, Sender};
+use super::{Entry, Heuristic, LangData, MatchData, Sender};
 use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
@@ -8,7 +8,7 @@ use std::{
 struct PathData<'entry> {
     entry: &'entry mut Entry,
     weight: i32,
-    reasons: Vec<String>,
+    reasons: Vec<LangData>,
 }
 
 pub struct MatchingState<'entries> {
@@ -35,13 +35,13 @@ impl<'entries> MatchingState<'entries> {
         }
     }
 
-    pub(super) fn process_collected_data(&mut self, sender: &Sender<MarkedForDeletion>) {
+    pub(super) fn process_collected_data(&mut self, sender: &Sender<MatchData>) {
         for (_, v) in self.contents.drain() {
             if v.weight <= 0 {
                 continue;
             }
             v.entry.read_children_path = None;
-            let data = MarkedForDeletion {
+            let data = MatchData {
                 path: v.entry.path(),
                 weight: v.weight,
                 reasons: v.reasons,
@@ -65,14 +65,14 @@ impl<'entries> MatchingState<'entries> {
     pub fn add_weight(&mut self, name: &str, weight: i32) {
         if let Some(v) = self.contents.get_mut(OsStr::new(name)) {
             v.weight += weight;
-            v.reasons.push(self.current_heuristic.unwrap().name().to_owned());
+            v.reasons.push(self.current_heuristic.unwrap().info());
         }
     }
 
-    pub fn add_weight_with_reason(&mut self, name: &str, weight: i32, reason: String) {
+    pub fn add_weight_with_comment(&mut self, name: &str, weight: i32, comment: &str) {
         if let Some(v) = self.contents.get_mut(OsStr::new(name)) {
             v.weight += weight;
-            v.reasons.push(reason);
+            v.reasons.push(self.current_heuristic.unwrap().info().comment(comment));
         }
     }
 }

@@ -1,3 +1,7 @@
+use clap::Parser;
+use project_cleaner::args::Args;
+
 fn main() {
-    println!("Hello, world!");
+    let args = Args::parse();
+    let _ = project_cleaner::ui::run(args);
 }

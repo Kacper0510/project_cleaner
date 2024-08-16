@@ -7,11 +7,11 @@ use std::{
 #[derive(Debug, Default, Clone)]
 struct WalkerCache {
     important_files: Vec<PathBuf>,
-    sender: Option<Sender<MarkedForDeletion>>,
+    sender: Option<Sender<MatchData>>,
 }
 
 impl WalkerCache {
-    fn new(sender: Sender<MarkedForDeletion>) -> Self {
+    fn new(sender: Sender<MatchData>) -> Self {
         let sender = Some(sender);
         Self {
             important_files: vec![],
@@ -31,18 +31,40 @@ mod matching_state;
 pub use matching_state::MatchingState;
 
 pub trait Heuristic {
-    fn name(&self) -> &'static str;
+    fn info(&self) -> LangData;
     fn check_for_matches(&self, state: &mut MatchingState);
 }
 
-#[derive(Debug)]
-pub struct MarkedForDeletion {
+#[derive(Debug, Clone)]
+pub struct MatchData {
     pub path: PathBuf,
     pub weight: i32,
-    pub reasons: Vec<String>,
+    pub reasons: Vec<LangData>,
 }
 
-pub fn walk_directories<F>(root_path: &Path, sender: Sender<MarkedForDeletion>, mut progress_callback: F)
+#[derive(Debug, Clone)]
+pub struct LangData {
+    pub name: &'static str,
+    pub icon: &'static str,
+    pub comment: Option<String>,
+}
+
+impl LangData {
+    pub fn new(name: &'static str, icon: &'static str) -> Self {
+        Self {
+            name,
+            icon,
+            comment: None,
+        }
+    }
+
+    pub fn comment(mut self, comment: &str) -> Self {
+        self.comment = Some(comment.to_owned());
+        self
+    }
+}
+
+pub fn walk_directories<F>(root_path: &Path, sender: Sender<MatchData>, mut progress_callback: F)
 where F: FnMut(Result<PathBuf>) {
     let iter = WalkDirGeneric::<WalkerCache>::new(root_path)
         .root_read_dir_state(WalkerCache::new(sender))
