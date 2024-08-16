@@ -1,5 +1,3 @@
-use std::time::{Duration, SystemTime};
-
 use clap::Parser;
 use project_cleaner::{args::Args, ui::run};
 

@@ -1,12 +1,19 @@
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
+    text::{Line, Span},
     widgets::{Block, BorderType, Clear, Padding, Paragraph, Row, Table},
     Frame,
 };
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::app::{App, AppState};
+
+const LOGO: &str = r#"   ___             _         __    _______                     
+  / _ \_______    (_)__ ____/ /_  / ___/ /__ ___ ____  ___ ____
+ / ___/ __/ _ \  / / -_) __/ __/ / /__/ / -_) _ `/ _ \/ -_) __/
+/_/  /_/  \___/_/ /\__/\__/\__/  \___/_/\__/\_,_/_//_/\__/_/   
+           |___/                                             "#;
 
 pub fn render(app: &mut App, frame: &mut Frame) {
     let layout = Layout::default()
@@ -35,27 +42,27 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
         .flex(Flex::Center)
         .split(header[1]);
 
-    let spinner_box = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(vec![Constraint::Length(13)])
-        .flex(Flex::Center)
-        .split(info_header[1]);
-
-    let logo = r#"   ___             _         __    _______                     
-  / _ \_______    (_)__ ____/ /_  / ___/ /__ ___ ____  ___ ____
- / ___/ __/ _ \  / / -_) __/ __/ / /__/ / -_) _ `/ _ \/ -_) __/
-/_/  /_/  \___/_/ /\__/\__/\__/  \___/_/\__/\_,_/_//_/\__/_/   
-             |___/                                             "#;
-
-    let logo = Paragraph::new(logo);
+    let logo = Paragraph::new(LOGO);
     frame.render_widget(logo, header[0]);
 
-    let logo =
-        Paragraph::new(format!("Cleanable space: {}GB\nSaved space: {}GB", 1.24, 0.24)).alignment(Alignment::Center);
+    let accent = Style::default().fg(Color::Cyan);
+    let text = vec![
+        Line::from(vec![Span::from("Cleanable space: "), Span::styled(format!("{}", app.cleanable_space), accent)]),
+        Line::from(vec![Span::from("Saved space: "), Span::styled(format!("{}", app.saved_space), accent)]),
+    ];
+
+    let logo = Paragraph::new(text).alignment(Alignment::Center);
     frame.render_widget(logo, info_header[0]);
 
     let mut make_spinner = |name: &str| {
+        let spinner_box = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Length((name.len() + 2).try_into().unwrap())])
+            .flex(Flex::Center)
+            .split(info_header[1]);
+
         let spinner = throbber_widgets_tui::Throbber::default()
+            .style(Style::default().fg(Color::Cyan))
             .label(name)
             .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
             .use_type(throbber_widgets_tui::WhichUse::Spin);
@@ -67,8 +74,8 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
         AppState::Scanning => make_spinner("Scanning..."),
         AppState::Calculating => make_spinner("Calculating..."),
         AppState::Done => {
-            let logo = Paragraph::new("    Done     ");
-            frame.render_widget(logo, spinner_box[0]);
+            let logo = Paragraph::new("Done!").alignment(Alignment::Center).fg(Color::Green);
+            frame.render_widget(logo, info_header[1]);
         },
     };
 }

@@ -7,6 +7,7 @@ use crate::{
     },
     walk_directories,
 };
+use size::Size;
 use std::{
     env, error,
     sync::mpsc::{Receiver, Sender},
@@ -36,6 +37,8 @@ pub struct App {
     pub dir_stats_channel: Channel<(usize, DirStats)>,
     pub walker_channel: Channel<MatchData>,
     pub handle: Vec<JoinHandle<()>>,
+    pub cleanable_space: Size,
+    pub saved_space: Size,
 }
 
 impl App {
@@ -50,6 +53,8 @@ impl App {
             dir_stats_channel: std::sync::mpsc::channel(),
             walker_channel: std::sync::mpsc::channel(),
             handle: vec![],
+            cleanable_space: Size::from_bytes(0),
+            saved_space: Size::from_bytes(0),
         }
     }
 
@@ -70,6 +75,9 @@ impl App {
 
         while let Ok((idx, data)) = self.dir_stats_channel.1.try_recv() {
             self.table.data[idx].dir_stats = data;
+            if let Some(size) = data.size {
+                self.cleanable_space += size;
+            }
         }
 
         if self.handle.iter().all(|h| h.is_finished()) {
