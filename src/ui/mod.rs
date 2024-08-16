@@ -1,8 +1,7 @@
 use app::{App, AppResult};
 use event::{Event, EventHandler};
 use handler::handle_key_events;
-use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 use tui::Tui;
 
@@ -11,6 +10,7 @@ use crate::args::Args;
 mod app;
 mod event;
 mod handler;
+mod model;
 mod render;
 mod tui;
 
@@ -33,8 +33,8 @@ pub fn run(args: Args) -> AppResult<()> {
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
+            Event::Mouse(_) => {},
+            Event::Resize(..) => {},
         }
     }
 

@@ -6,7 +6,7 @@ use ratatui::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::app::App;
+use super::app::{App, AppState};
 
 pub fn render(app: &mut App, frame: &mut Frame) {
     let layout = Layout::default()
@@ -54,18 +54,26 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
         Paragraph::new(format!("Cleanable space: {}GB\nSaved space: {}GB", 1.24, 0.24)).alignment(Alignment::Center);
     frame.render_widget(logo, info_header[0]);
 
-    let spinner = throbber_widgets_tui::Throbber::default()
-        .label("Scanning...")
-        .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
-        .use_type(throbber_widgets_tui::WhichUse::Spin);
+    match app.state {
+        AppState::Scanning => {
+            let spinner = throbber_widgets_tui::Throbber::default()
+                .label("Scanning...")
+                .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
+                .use_type(throbber_widgets_tui::WhichUse::Spin);
 
-    frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
+            frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
+        },
+        AppState::Done => {
+            let logo = Paragraph::new("    Done     ");
+            frame.render_widget(logo, spinner_box[0]);
+        },
+    };
 }
 
 fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
     let widths = [Constraint::Length(6), Constraint::Percentage(100), Constraint::Length(10), Constraint::Length(10)];
     let table_data = app.table.clone();
-    let table = Table::new(table_data.to_rows(), widths)
+    let table = Table::new(table_data.to_rows(app.args.no_icons), widths)
         .column_spacing(1)
         .header(
             Row::new(vec!["", "Path", "Size", "Rating"])

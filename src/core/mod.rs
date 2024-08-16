@@ -46,14 +46,16 @@ pub struct MatchData {
 pub struct LangData {
     pub name: &'static str,
     pub icon: &'static str,
+    pub short: &'static str,
     pub comment: Option<String>,
 }
 
 impl LangData {
-    pub fn new(name: &'static str, icon: &'static str) -> Self {
+    pub fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
         Self {
             name,
             icon,
+            short,
             comment: None,
         }
     }

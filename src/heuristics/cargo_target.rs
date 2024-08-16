@@ -7,7 +7,7 @@ pub const INSTANCE: CargoTarget = CargoTarget;
 
 impl Heuristic for CargoTarget {
     fn info(&self) -> LangData {
-        LangData::new("Rust", "")
+        LangData::new("Rust", "", "rs")
     }
 
     fn check_for_matches(&self, state: &mut MatchingState) {
