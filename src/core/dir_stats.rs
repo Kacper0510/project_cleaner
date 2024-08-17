@@ -2,7 +2,7 @@ use std::{
     os::unix::fs::MetadataExt,
     path::PathBuf,
     sync::mpsc::Sender,
-    thread::{self, JoinHandle},
+    thread::{self, available_parallelism, JoinHandle},
     time::SystemTime,
 };
 
@@ -57,8 +57,8 @@ impl DirStats {
 }
 
 pub fn dir_stats_parallel(data: Vec<(usize, PathBuf)>, tx: Sender<(usize, DirStats)>) -> Vec<JoinHandle<()>> {
-    const THREADS_COUNT: usize = 4; // TODO: Maybe calculate this number?
-    let chunks: Vec<_> = data.chunks(THREADS_COUNT).map(|s| s.to_vec()).collect();
+    let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(4);
+    let chunks: Vec<_> = data.chunks(thread_count).map(|s| s.to_vec()).collect();
 
     chunks
         .into_iter()
