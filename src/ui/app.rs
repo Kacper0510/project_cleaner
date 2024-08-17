@@ -76,11 +76,18 @@ impl App {
             self.table.add_match(data);
         }
 
+        let mut updated = false;
         while let Ok((idx, data)) = self.dir_stats_channel.1.try_recv() {
-            self.table.data[idx].dir_stats = data;
-            if let Some(size) = data.size {
-                self.cleanable_space += size;
+            if let Some(idx) = self.table.data.iter().position(|ele| ele.idx == idx) {
+                self.table.data[idx].dir_stats = data;
+                if let Some(size) = data.size {
+                    updated = true;
+                    self.cleanable_space += size;
+                }
             }
+        }
+        if updated {
+            self.table.resort();
         }
 
         if self.handle.iter().all(|h| h.is_finished()) {
@@ -88,7 +95,7 @@ impl App {
             self.state = match self.state {
                 AppState::Scanning => {
                     self.handle = dir_stats_parallel(
-                        self.table.data.clone().into_iter().map(|ele| ele.data.path).enumerate().collect(),
+                        self.table.data.clone().into_iter().map(|ele| (ele.idx, ele.data.path)).collect(),
                         self.dir_stats_channel.0.clone(),
                     );
                     AppState::Calculating

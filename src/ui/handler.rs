@@ -1,5 +1,5 @@
 use super::app::{App, AppResult, AppState};
-use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 
 /// Handles the key events and updates the state of [`App`].
 pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
@@ -33,5 +33,21 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
 
         _ => {},
     }
+    Ok(())
+}
+
+pub fn handle_mouse_events(mouse_event: MouseEvent, app: &mut App) -> AppResult<()> {
+    match mouse_event.kind {
+        MouseEventKind::ScrollDown => {
+            app.list_down();
+        },
+
+        MouseEventKind::ScrollUp => {
+            app.list_up();
+        },
+
+        _ => {},
+    }
+
     Ok(())
 }

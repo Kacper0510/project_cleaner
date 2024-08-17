@@ -13,6 +13,7 @@ pub struct TableData {
 
 #[derive(Debug, Clone)]
 pub struct MatchDataUI {
+    pub idx: usize,
     pub data: MatchData,
     pub dir_stats: DirStats,
     status: MatchDataUIStatus,
@@ -57,14 +58,31 @@ impl TableData {
     }
 
     pub fn add_match(&mut self, data: MatchData) {
-        if self.state.selected().is_none() {
-            self.state.select(Some(0))
-        }
-
+        let idx = self.data.len();
         self.data.push(MatchDataUI {
+            idx,
             data,
             dir_stats: DirStats::default(),
             status: MatchDataUIStatus::Found,
         });
+        self.resort();
+    }
+
+    pub fn resort(&mut self) {
+        let idx = if let Some(selected) = self.state.selected() {
+            let path = self.data[selected].idx;
+            Some(path)
+        } else {
+            self.state.select(Some(0));
+            None
+        };
+
+        self.data.sort_by(|a, b| b.dir_stats.size.partial_cmp(&a.dir_stats.size).unwrap());
+
+        if let Some(idx) = idx {
+            if let Some(idx) = self.data.iter().position(|ele| ele.idx == idx) {
+                self.state.select(Some(idx))
+            }
+        }
     }
 }
