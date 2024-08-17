@@ -8,6 +8,8 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use super::app::App;
 
+const LOGO: &str = include_str!("logo.txt");
+
 pub fn render(app: &mut App, frame: &mut Frame) {
     let layout = Layout::default()
         .direction(Direction::Vertical)
@@ -41,13 +43,7 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
         .flex(Flex::Center)
         .split(info_header[1]);
 
-    let logo = r#"   ___             _         __    _______                     
-  / _ \_______    (_)__ ____/ /_  / ___/ /__ ___ ____  ___ ____
- / ___/ __/ _ \  / / -_) __/ __/ / /__/ / -_) _ `/ _ \/ -_) __/
-/_/  /_/  \___/_/ /\__/\__/\__/  \___/_/\__/\_,_/_//_/\__/_/   
-             |___/                                             "#;
-
-    let logo = Paragraph::new(logo);
+    let logo = Paragraph::new(LOGO);
     frame.render_widget(logo, header[0]);
 
     let logo =
