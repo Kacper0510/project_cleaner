@@ -25,8 +25,9 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     render_table(app, frame, layout[1]);
     render_help(app, frame, layout[2]);
 
-    // TODO: Popup
-    // render_popup(app, frame, frame.size())
+    if let Some(idx) = app.info_index {
+        render_info_popup(app, frame, frame.size(), idx);
+    }
 }
 
 fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
@@ -97,11 +98,29 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
 }
 
 fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
-    let mut help = vec!["Scroll [↑↓]", "Delete [d]", "Exit [q]"];
-    if app.state == AppState::Done {
-        help.push("Reload [r]");
+    let help = match app.popup_state {
+        super::app::PopUpState::Open => {
+            vec!["Close [q]"]
+        },
+        super::app::PopUpState::Closed => match app.state {
+            AppState::Done => {
+                if app.is_selected() {
+                    vec!["Scroll [↑↓]", "Delete [d]", "Info [i]", "Reload [r]", "Exit [q]"]
+                } else {
+                    vec!["Scroll [↑↓]", "Reload [r]", "Exit [q]"]
+                }
+            },
+            _ => {
+                if app.is_selected() {
+                    vec!["Scroll [↑↓]", "Delete [d]", "Info [i]", "Exit [q]"]
+                } else {
+                    vec!["Scroll [↑↓]", "Exit [q]"]
+                }
+            },
+        },
     }
-    let help = help.iter().map(|e| format!(" {e} "));
+    .into_iter()
+    .map(|e| format!(" {e} "));
 
     let constraints = help.clone().map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
 
@@ -119,7 +138,9 @@ fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
     }
 }
 
-fn render_popup(_app: &mut App, frame: &mut Frame, area: Rect) {
+fn render_info_popup(app: &mut App, frame: &mut Frame, area: Rect, match_data_idx: usize) -> Option<()> {
+    let match_data = app.table.get_by_idx(match_data_idx)?;
+
     let popup_l1 = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![Constraint::Percentage(60)])
@@ -132,11 +153,56 @@ fn render_popup(_app: &mut App, frame: &mut Frame, area: Rect) {
         .split(popup_l1[0]);
 
     frame.render_widget(Clear, popup_l2[0]);
-    let txt = Paragraph::new("Hello!").block(
+
+    let small_style = Style::default().fg(Color::DarkGray);
+
+    let mut text = vec![
+        Line::from(vec![Span::styled(
+            match_data.data.path.to_str().unwrap_or("---").to_string(),
+            Style::default().bold().fg(Color::Cyan),
+        )]),
+        Line::from(vec![]),
+        Line::from(vec![Span::styled("Reasons: ", Style::default().bold())]),
+    ];
+    let mut other: Vec<Line> = match_data
+        .data
+        .reasons
+        .iter()
+        .flat_map(|ele| {
+            let mut res = vec![Line::from(vec![Span::from(if app.args.no_icons {
+                format!("- {}", ele.name)
+            } else {
+                format!("- {} {}", ele.icon, ele.name)
+            })])];
+            if let Some(comment) = &ele.comment {
+                res.push(Line::from(vec![Span::styled(format!("  {}", comment), small_style)]))
+            }
+            res
+        })
+        .collect();
+    text.append(&mut other);
+    text.append(&mut vec![
+        Line::from(vec![]),
+        Line::from(vec![Span::styled("Stats: ", Style::default().bold())]),
+        Line::from(vec![
+            Span::from("Size: "),
+            Span::styled(match_data.dir_stats.size.map(|s| format!("{}", s)).unwrap_or("---".to_owned()), small_style),
+        ]),
+        Line::from(vec![
+            Span::from("Last modification: "),
+            Span::styled(
+                match_data.dir_stats.last_mod_days().map(|s| format!("{}d", s)).unwrap_or("---".to_owned()),
+                small_style,
+            ),
+        ]),
+    ]);
+
+    let container = Paragraph::new(text).block(
         Block::bordered()
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Color::Cyan))
             .padding(Padding::uniform(1)),
     );
-    frame.render_widget(txt, popup_l2[0])
+    frame.render_widget(container, popup_l2[0]);
+    Some(())
 }

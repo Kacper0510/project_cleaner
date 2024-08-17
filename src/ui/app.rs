@@ -25,6 +25,12 @@ pub enum AppState {
     Done,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum PopUpState {
+    Open,
+    Closed,
+}
+
 type Channel<T> = (Sender<T>, Receiver<T>);
 
 #[derive(Debug)]
@@ -34,11 +40,13 @@ pub struct App {
     pub table: TableData,
     pub throbber_state: ThrobberState,
     pub state: AppState,
+    pub popup_state: PopUpState,
     pub dir_stats_channel: Channel<(usize, DirStats)>,
     pub walker_channel: Channel<MatchData>,
     pub handle: Vec<JoinHandle<()>>,
     pub cleanable_space: Size,
     pub saved_space: Size,
+    pub info_index: Option<usize>,
 }
 
 impl App {
@@ -50,11 +58,13 @@ impl App {
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
             state: AppState::Scanning,
+            popup_state: PopUpState::Closed,
             dir_stats_channel: std::sync::mpsc::channel(),
             walker_channel: std::sync::mpsc::channel(),
             handle: vec![],
             cleanable_space: Size::from_bytes(0),
             saved_space: Size::from_bytes(0),
+            info_index: None,
         }
     }
 
@@ -138,7 +148,24 @@ impl App {
         self.cleanable_space = Size::from_bytes(0);
         self.saved_space = Size::from_bytes(0);
         self.table = TableData::default();
+        self.popup_state = PopUpState::Closed;
         self.run();
+    }
+
+    pub fn show_info(&mut self) {
+        if let Some(selected) = self.table.state.selected() {
+            self.popup_state = PopUpState::Open;
+            self.info_index = Some(self.table.data[selected].idx);
+        }
+    }
+
+    pub fn hide_info(&mut self) {
+        self.popup_state = PopUpState::Closed;
+        self.info_index = None;
+    }
+
+    pub fn is_selected(&self) -> bool {
+        self.table.state.selected().is_some()
     }
 
     pub fn delete(&mut self) {}

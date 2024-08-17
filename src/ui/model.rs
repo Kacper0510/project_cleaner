@@ -85,4 +85,9 @@ impl TableData {
             }
         }
     }
+
+    pub fn get_by_idx(&self, idx: usize) -> Option<&MatchDataUI> {
+        let idx = self.data.iter().position(|ele| ele.idx == idx);
+        idx.map(|idx| &self.data[idx])
+    }
 }
