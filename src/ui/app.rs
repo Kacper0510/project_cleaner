@@ -1,5 +1,3 @@
-use std::error;
-
 use ratatui::widgets::{Cell, Row, TableState};
 use size::Size;
 use throbber_widgets_tui::ThrobberState;
@@ -8,9 +6,6 @@ use crate::{
     args::Args,
     core::{LangData, MatchData},
 };
-
-/// Application result type.
-pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 /// Application.
 #[derive(Debug)]

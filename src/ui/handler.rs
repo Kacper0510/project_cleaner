@@ -1,4 +1,4 @@
-use super::app::{App, AppResult};
+use super::{App, AppResult};
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Handles the key events and updates the state of [`App`].

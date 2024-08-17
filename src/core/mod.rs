@@ -1,5 +1,6 @@
 use jwalk::*;
 use std::{
+    fmt,
     path::{Path, PathBuf},
     sync::mpsc::Sender,
 };
@@ -47,6 +48,17 @@ pub struct LangData {
     pub name: &'static str,
     pub icon: &'static str,
     pub comment: Option<String>,
+}
+
+impl fmt::Display for LangData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.name)?;
+        if let Some(comment) = &self.comment {
+            write!(f, " - {}", comment)
+        } else {
+            Ok(())
+        }
+    }
 }
 
 impl LangData {

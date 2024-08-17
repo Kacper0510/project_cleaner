@@ -1,18 +1,22 @@
-use app::{App, AppResult};
-use event::{Event, EventHandler};
-use handler::handle_key_events;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
-use tui::Tui;
 
-use crate::args::Args;
+use crate::args::*;
 
 mod app;
+use app::App;
+
 mod event;
+use event::{Event, EventHandler};
+
 mod handler;
+use handler::handle_key_events;
+
 mod render;
+
 mod tui;
+use tui::Tui;
 
 pub fn run(args: Args) -> AppResult<()> {
     // Create an application.
