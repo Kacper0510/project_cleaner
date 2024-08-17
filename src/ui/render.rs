@@ -96,8 +96,12 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
     frame.render_stateful_widget(table, area, &mut app.table.state);
 }
 
-fn render_help(_app: &mut App, frame: &mut Frame, area: Rect) {
-    let help = ["Scroll [↑↓]", "Delete [d]", "Exit [q]"].iter().map(|e| format!(" {e} "));
+fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
+    let mut help = vec!["Scroll [↑↓]", "Delete [d]", "Exit [q]"];
+    if app.state == AppState::Done {
+        help.push("Reload [r]");
+    }
+    let help = help.iter().map(|e| format!(" {e} "));
 
     let constraints = help.clone().map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
 

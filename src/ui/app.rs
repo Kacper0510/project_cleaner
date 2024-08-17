@@ -59,7 +59,10 @@ impl App {
     }
 
     pub fn run(&mut self) {
+        self.state = AppState::Scanning;
+        self.handle = vec![];
         let path = self.args.path.clone().unwrap_or(env::current_dir().unwrap());
+
         let tx = self.walker_channel.0.clone();
         let handle = std::thread::spawn(move || walk_directories(&path, tx, |_path| {}));
         self.handle.push(handle);
@@ -123,4 +126,13 @@ impl App {
             }
         }));
     }
+
+    pub fn reload(&mut self) {
+        self.cleanable_space = Size::from_bytes(0);
+        self.saved_space = Size::from_bytes(0);
+        self.table = TableData::default();
+        self.run();
+    }
+
+    pub fn delete(&mut self) {}
 }
