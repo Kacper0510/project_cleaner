@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     os::linux::fs::MetadataExt,
     path::PathBuf,
     sync::mpsc::Sender,
