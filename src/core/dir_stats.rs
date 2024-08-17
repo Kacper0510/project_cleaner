@@ -1,5 +1,6 @@
 use std::{
-    os::unix::fs::MetadataExt,
+    collections::{HashMap, HashSet},
+    os::linux::fs::MetadataExt,
     path::PathBuf,
     sync::mpsc::Sender,
     thread::{self, available_parallelism, JoinHandle},
@@ -18,19 +19,24 @@ pub struct DirStats {
 impl DirStats {
     pub fn new(path: PathBuf) -> Self {
         let files_iter = WalkDir::new(path)
+            .skip_hidden(false)
+            .follow_links(false)
             .try_into_iter()
             .ok()
-            .map(|list| list.filter_map(|ele| ele.ok()).filter(|f| f.metadata().is_ok_and(|f| f.is_file())));
+            .map(|list| list.filter_map(|ele| ele.ok()).filter(|f| f.metadata().is_ok_and(|f| !f.is_symlink())));
 
         if let Some(files_iter) = files_iter {
             let mut max_value: Option<SystemTime> = None;
             let mut sum_value: Option<u64> = None;
+            let mut visited: HashSet<u64> = HashSet::default();
             for file in files_iter {
                 let last_mod = file.metadata().ok().and_then(|m| m.modified().ok());
-                let size = file.metadata().ok().map(|m| m.size()); // TODO: fix to be correct size
-
-                if let Some(size) = size {
-                    sum_value = Some(if let Some(v) = sum_value { v + size } else { size })
+                let size = file.metadata().ok().map(|m| m.len());
+                if visited.insert(file.metadata().unwrap().st_ino()) {
+                    // inode ids needs to be unique
+                    if let Some(size) = size {
+                        sum_value = Some(if let Some(v) = sum_value { v + size } else { size })
+                    }
                 }
 
                 max_value = if max_value < last_mod { last_mod } else { max_value };
