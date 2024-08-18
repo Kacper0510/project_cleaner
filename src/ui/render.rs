@@ -7,7 +7,7 @@ use ratatui::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::app::{App, AppState};
+use super::app::{App, AppState, DeletePopUpKind, PopUpKind, PopUpState};
 
 const LOGO: &str = r#"   ___             _         __    _______                     
   / _ \_______    (_)__ ____/ /_  / ___/ /__ ___ ____  ___ ____
@@ -25,8 +25,19 @@ pub fn render(app: &mut App, frame: &mut Frame) {
     render_table(app, frame, layout[1]);
     render_help(app, frame, layout[2]);
 
-    if let Some(idx) = app.info_index {
-        render_info_popup(app, frame, frame.size(), idx);
+    match app.popup_state.clone() {
+        PopUpState::Open(kind) => match kind {
+            PopUpKind::Info => {
+                render_info_popup(app, frame, frame.size());
+            },
+            PopUpKind::Delete(kind) => {
+                render_del_popup(app, frame, frame.size(), kind);
+            },
+            PopUpKind::Exit => {
+                render_exit_popup(app, frame, frame.size());
+            },
+        },
+        PopUpState::Closed => {},
     }
 }
 
@@ -58,30 +69,30 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
     let logo = Paragraph::new(text).alignment(Alignment::Center);
     frame.render_widget(logo, info_header[0]);
 
-    let mut make_spinner = |name: &str| {
-        let spinner_box = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Length((name.len() + 2).try_into().unwrap())])
-            .flex(Flex::Center)
-            .split(info_header[1]);
-
-        let spinner = throbber_widgets_tui::Throbber::default()
-            .style(Style::default().fg(Color::Cyan))
-            .label(name)
-            .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
-            .use_type(throbber_widgets_tui::WhichUse::Spin);
-
-        frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
-    };
-
     match app.state {
-        AppState::Scanning => make_spinner("Scanning..."),
-        AppState::Calculating => make_spinner("Calculating..."),
+        AppState::Scanning => make_spinner(app, frame, info_header[1], "Scanning..."),
+        AppState::Calculating => make_spinner(app, frame, info_header[1], "Calculating..."),
         AppState::Done => {
             let logo = Paragraph::new("Done!").alignment(Alignment::Center).fg(Color::Green);
             frame.render_widget(logo, info_header[1]);
         },
     };
+}
+
+fn make_spinner(app: &mut App, frame: &mut Frame, area: Rect, name: &str) {
+    let spinner_box = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(vec![Constraint::Length((name.len() + 2).try_into().unwrap())])
+        .flex(Flex::Center)
+        .split(area);
+
+    let spinner = throbber_widgets_tui::Throbber::default()
+        .style(Style::default().fg(Color::Cyan))
+        .label(name)
+        .throbber_set(throbber_widgets_tui::BRAILLE_SIX_DOUBLE)
+        .use_type(throbber_widgets_tui::WhichUse::Spin);
+
+    frame.render_stateful_widget(spinner, spinner_box[0], &mut app.throbber_state);
 }
 
 fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
@@ -120,9 +131,7 @@ fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
     }
 }
 
-fn render_info_popup(app: &mut App, frame: &mut Frame, area: Rect, match_data_idx: usize) -> Option<()> {
-    let match_data = app.table.get_by_idx(match_data_idx)?;
-
+fn make_popup_layout(frame: &mut Frame, area: Rect) -> Rect {
     let popup_l1 = Layout::default()
         .direction(Direction::Vertical)
         .constraints(vec![Constraint::Percentage(60)])
@@ -135,7 +144,14 @@ fn render_info_popup(app: &mut App, frame: &mut Frame, area: Rect, match_data_id
         .split(popup_l1[0]);
 
     frame.render_widget(Clear, popup_l2[0]);
+    popup_l2[0]
+}
 
+fn render_info_popup(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
+    let match_data_idx = app.info_index?;
+    let match_data = app.table.get_by_idx(match_data_idx)?;
+
+    let area = make_popup_layout(frame, area);
     let small_style = Style::default().fg(Color::DarkGray);
 
     let mut text = vec![
@@ -185,15 +201,118 @@ fn render_info_popup(app: &mut App, frame: &mut Frame, area: Rect, match_data_id
             .border_style(Style::default().fg(Color::Cyan))
             .padding(Padding::uniform(1)),
     );
-    frame.render_widget(container, popup_l2[0]);
+    frame.render_widget(container, area);
     Some(())
+}
+
+fn render_del_popup(app: &mut App, frame: &mut Frame, area: Rect, kind: DeletePopUpKind) {
+    let area = make_popup_layout(frame, area);
+
+    let container = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::uniform(1));
+
+    frame.render_widget(container, area);
+
+    match kind {
+        DeletePopUpKind::Confirm => {
+            let count = app.table.get_selected_path().len();
+            let p = Paragraph::new(vec![Line::from(vec![
+                Span::from("Do you want to "),
+                Span::styled("permanently", Style::default().underlined().fg(Color::Red)),
+                Span::from(format!(" delete {} {}?", count, if count > 1 { "directories" } else { "directoire" })),
+            ])
+            .alignment(Alignment::Center)
+            .style(Style::default().bold().fg(Color::Cyan))]);
+
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .flex(Flex::Center)
+                .constraints(vec![Constraint::Length(1), Constraint::Length(1), Constraint::Length(1)])
+                .split(area);
+            frame.render_widget(p, layout[0]);
+
+            let layout = Layout::default()
+                .direction(Direction::Horizontal)
+                .flex(Flex::SpaceAround)
+                .constraints(vec![Constraint::Length(15), Constraint::Length(15)])
+                .split(layout[2]);
+
+            frame.render_widget(
+                Paragraph::new("No [N]").alignment(Alignment::Center).fg(Color::Gray).bg(Color::DarkGray),
+                layout[0],
+            );
+            frame.render_widget(
+                Paragraph::new("Yes [y]").alignment(Alignment::Center).fg(Color::Gray).bg(Color::DarkGray),
+                layout[1],
+            );
+        },
+        DeletePopUpKind::Deleting => {
+            let layout = Layout::default()
+                .direction(Direction::Vertical)
+                .flex(Flex::Center)
+                .constraints(vec![Constraint::Length(1)])
+                .split(area);
+            make_spinner(app, frame, layout[0], "Deleting...")
+        },
+    }
+}
+
+fn render_exit_popup(app: &mut App, frame: &mut Frame, area: Rect) {
+    let area = make_popup_layout(frame, area);
+
+    let container = Block::bordered()
+        .border_type(BorderType::Rounded)
+        .border_style(Style::default().fg(Color::Cyan))
+        .padding(Padding::uniform(1));
+
+    frame.render_widget(container, area);
+
+    let count = app.table.get_selected_path().len();
+    let p = Paragraph::new(vec![
+        Line::from(vec![Span::from("Do you want to exit?")])
+            .alignment(Alignment::Center)
+            .style(Style::default().bold().fg(Color::Cyan)),
+        Line::from(vec![
+            Span::from(format!(
+                "Selected delete {} {} will ",
+                count,
+                if count > 1 { "directories" } else { "directoire" }
+            )),
+            Span::styled("not", Style::default().underlined().fg(Color::Red)),
+            Span::from(" be deleted."),
+        ])
+        .alignment(Alignment::Center),
+    ]);
+    let layout = Layout::default()
+        .direction(Direction::Vertical)
+        .flex(Flex::Center)
+        .constraints(vec![Constraint::Length(2), Constraint::Length(1), Constraint::Length(1)])
+        .split(area);
+    frame.render_widget(p, layout[0]);
+
+    let layout = Layout::default()
+        .direction(Direction::Horizontal)
+        .flex(Flex::SpaceAround)
+        .constraints(vec![Constraint::Length(15), Constraint::Length(15)])
+        .split(layout[2]);
+
+    frame.render_widget(
+        Paragraph::new("No [N]").alignment(Alignment::Center).fg(Color::Gray).bg(Color::DarkGray),
+        layout[0],
+    );
+    frame.render_widget(
+        Paragraph::new("Yes [y]").alignment(Alignment::Center).fg(Color::Gray).bg(Color::DarkGray),
+        layout[1],
+    );
 }
 
 fn construct_help(app: &App) -> Vec<String> {
     let mut res = vec![];
 
     match app.popup_state {
-        super::app::PopUpState::Open => {
+        super::app::PopUpState::Open(_) => {
             res.push((10, "Close [q]"));
         },
         super::app::PopUpState::Closed => {

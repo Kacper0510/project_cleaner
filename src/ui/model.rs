@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use ratatui::{
     style::{Color, Style},
     text::{Line, Span},
@@ -146,6 +148,14 @@ impl TableData {
 
     pub fn is_any_selected(&self) -> bool {
         self.data.iter().any(|ele| ele.status == MatchDataUIStatus::Selected)
+    }
+
+    pub fn get_selected_path(&self) -> Vec<PathBuf> {
+        self.data
+            .iter()
+            .filter(|ele| ele.status == MatchDataUIStatus::Selected)
+            .map(|ele| ele.data.path.clone())
+            .collect()
     }
 
     pub fn cleanable_space(&self) -> Size {

@@ -2,6 +2,7 @@ use super::model::TableData;
 use crate::{
     args::Args,
     core::{
+        dir_rm,
         dir_stats::{dir_stats_parallel, DirStats},
         MatchData,
     },
@@ -24,10 +25,23 @@ pub enum AppState {
     Done,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PopUpState {
-    Open,
+    Open(PopUpKind),
     Closed,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum PopUpKind {
+    Info,
+    Delete(DeletePopUpKind),
+    Exit,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum DeletePopUpKind {
+    Confirm,
+    Deleting,
 }
 
 type Channel<T> = (Sender<T>, Receiver<T>);
@@ -46,6 +60,7 @@ pub struct App {
     pub dir_stats_channel: Channel<(usize, DirStats)>,
     pub walker_channel: Channel<MatchData>,
     pub handle: Vec<JoinHandle<()>>,
+    pub del_handle: Vec<JoinHandle<()>>,
 
     pub info_index: Option<usize>,
 }
@@ -63,6 +78,7 @@ impl App {
             dir_stats_channel: std::sync::mpsc::channel(),
             walker_channel: std::sync::mpsc::channel(),
             handle: vec![],
+            del_handle: vec![],
             info_index: None,
         }
     }
@@ -107,10 +123,25 @@ impl App {
                 AppState::Done | AppState::Calculating => AppState::Done,
             }
         }
+
+        if self.popup_state == PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Deleting))
+            && self.del_handle.iter().all(|h| h.is_finished())
+        {
+            self.popup_state = PopUpState::Closed;
+            self.del_handle = vec![];
+            self.reload();
+        }
     }
 
-    /// Set running to false to quit the application.
     pub fn quit(&mut self) {
+        if self.table.is_any_selected() {
+            self.popup_state = PopUpState::Open(PopUpKind::Exit);
+        } else {
+            self.running = false;
+        }
+    }
+
+    pub fn force_quit(&mut self) {
         self.running = false;
     }
 
@@ -141,12 +172,13 @@ impl App {
     pub fn reload(&mut self) {
         self.table = TableData::default();
         self.popup_state = PopUpState::Closed;
+        self.del_handle = vec![];
         self.run();
     }
 
     pub fn show_info(&mut self) {
         if let Some(selected) = self.table.state.selected() {
-            self.popup_state = PopUpState::Open;
+            self.popup_state = PopUpState::Open(PopUpKind::Info);
             self.info_index = Some(self.table.data[selected].idx);
         }
     }
@@ -165,5 +197,14 @@ impl App {
         self.list_down();
     }
 
-    pub fn delete(&mut self) {}
+    pub fn delete(&mut self) {
+        if self.table.is_any_selected() {
+            self.popup_state = PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Confirm));
+        }
+    }
+
+    pub fn confirm_delete(&mut self) {
+        self.del_handle = dir_rm::dir_rm_parallel(self.table.get_selected_path());
+        self.popup_state = PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Deleting));
+    }
 }

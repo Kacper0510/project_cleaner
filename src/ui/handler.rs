@@ -1,19 +1,33 @@
-use super::app::{App, AppResult, AppState, PopUpState};
+use super::app::{App, AppResult, AppState, DeletePopUpKind, PopUpKind, PopUpState};
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 
 /// Handles the key events and updates the state of [`App`].
 pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
-    match app.popup_state {
-        super::app::PopUpState::Open => match key_event.code {
+    if app.popup_state == PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Deleting)) {
+        return Ok(());
+    }
+
+    match &app.popup_state {
+        PopUpState::Open(kind) => match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('i') => app.hide_info(),
 
             KeyCode::Char('c') | KeyCode::Char('C') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.quit()
             },
 
+            KeyCode::Char(' ') | KeyCode::Enter | KeyCode::Char('n') => match kind {
+                PopUpKind::Info => {},
+                PopUpKind::Delete(_) | PopUpKind::Exit => app.hide_info(),
+            },
+            KeyCode::Char('y') => match kind {
+                PopUpKind::Info => {},
+                PopUpKind::Delete(_) => app.confirm_delete(),
+                PopUpKind::Exit => app.force_quit(),
+            },
+
             _ => {},
         },
-        super::app::PopUpState::Closed => {
+        PopUpState::Closed => {
             match key_event.code {
                 KeyCode::Esc | KeyCode::Char('q') => app.quit(),
 
@@ -48,15 +62,13 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
 }
 
 pub fn handle_mouse_events(mouse_event: MouseEvent, app: &mut App) -> AppResult<()> {
-    if app.popup_state == PopUpState::Open {
-        return Ok(());
-    }
-    match mouse_event.kind {
-        MouseEventKind::ScrollDown => app.list_down(),
-        MouseEventKind::ScrollUp => app.list_up(),
+    if app.popup_state == PopUpState::Closed {
+        match mouse_event.kind {
+            MouseEventKind::ScrollDown => app.list_down(),
+            MouseEventKind::ScrollUp => app.list_up(),
 
-        _ => {},
+            _ => {},
+        }
     }
-
     Ok(())
 }
