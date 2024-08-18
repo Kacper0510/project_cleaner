@@ -1,4 +1,7 @@
-use super::model::TableData;
+use super::{
+    model::TableData,
+    popup::{DeletePopUpKind, PopUpKind, PopUpState},
+};
 use crate::{
     args::Args,
     core::{
@@ -18,30 +21,10 @@ use throbber_widgets_tui::ThrobberState;
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 #[derive(Debug, PartialEq)]
-
 pub enum AppState {
     Scanning,
     Calculating,
     Done,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum PopUpState {
-    Open(PopUpKind),
-    Closed,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum PopUpKind {
-    Info,
-    Delete(DeletePopUpKind),
-    Exit,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum DeletePopUpKind {
-    Confirm,
-    Deleting,
 }
 
 type Channel<T> = (Sender<T>, Receiver<T>);

@@ -11,6 +11,7 @@ mod app;
 mod event;
 mod handler;
 mod model;
+mod popup;
 mod render;
 mod tui;
 

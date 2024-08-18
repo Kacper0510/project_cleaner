@@ -6,10 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use crate::ui::{
-    app::{App, DeletePopUpKind},
-    render::spinner::make_spinner,
-};
+use crate::ui::{app::App, popup::DeletePopUpKind, render::spinner::make_spinner};
 
 use super::make_popup_layout;
 

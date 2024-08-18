@@ -1,4 +1,7 @@
-use super::app::{App, AppResult, AppState, DeletePopUpKind, PopUpKind, PopUpState};
+use super::{
+    app::{App, AppResult, AppState},
+    popup::{DeletePopUpKind, PopUpKind, PopUpState},
+};
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 
 /// Handles the key events and updates the state of [`App`].

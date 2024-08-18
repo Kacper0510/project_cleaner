@@ -1,13 +1,21 @@
+use crate::core::{dir_stats::DirStats, MatchData};
+use ratatui::widgets::TableState;
+use size::Size;
 use std::path::PathBuf;
 
-use ratatui::{
-    style::{Color, Style},
-    text::{Line, Span},
-    widgets::{Cell, Row, TableState},
-};
-use size::Size;
+#[derive(Debug, Clone)]
+pub struct MatchDataUI {
+    pub idx: usize,
+    pub data: MatchData,
+    pub dir_stats: DirStats,
+    pub status: MatchDataUIStatus,
+}
 
-use crate::core::{dir_stats::DirStats, MatchData};
+#[derive(Debug, Clone, PartialEq)]
+pub enum MatchDataUIStatus {
+    Found,
+    Selected,
+}
 
 #[derive(Debug, Clone)]
 pub struct TableData {
@@ -26,58 +34,7 @@ impl Default for TableData {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct MatchDataUI {
-    pub idx: usize,
-    pub data: MatchData,
-    pub dir_stats: DirStats,
-    status: MatchDataUIStatus,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum MatchDataUIStatus {
-    Found,
-    Selected,
-}
-
 impl TableData {
-    pub fn to_rows(&self, no_icons: bool) -> Vec<Row> {
-        self.data
-            .iter()
-            .map(|ele| {
-                let icons = ele
-                    .data
-                    .reasons
-                    .iter()
-                    .map(|e| if no_icons { e.short.to_owned() } else { e.icon.to_owned() })
-                    .collect::<Vec<String>>()
-                    .join(" ");
-
-                let line = match ele.status {
-                    MatchDataUIStatus::Selected => {
-                        vec![
-                            Span::styled("[del]", Style::default().fg(Color::Red)),
-                            Span::from(" "),
-                            Span::from(ele.data.path.display().to_string()),
-                        ]
-                    },
-                    MatchDataUIStatus::Found => vec![Span::from(ele.data.path.display().to_string())],
-                };
-
-                Row::new(vec![
-                    Cell::new(icons),
-                    Cell::new(Line::from(line)),
-                    Cell::new(if let Some(s) = &ele.dir_stats.last_mod_days() {
-                        format!("{}d", s)
-                    } else {
-                        "---".to_owned()
-                    }),
-                    Cell::new(if let Some(s) = &ele.dir_stats.size { format!("{}", s) } else { "---".to_owned() }),
-                ])
-            })
-            .collect()
-    }
-
     pub fn add_match(&mut self, data: MatchData) {
         let idx = self.data.len();
         self.data.push(MatchDataUI {

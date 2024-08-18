@@ -6,7 +6,10 @@ use ratatui::{
 };
 use unicode_segmentation::UnicodeSegmentation;
 
-use crate::ui::app::{App, AppState, PopUpState};
+use crate::ui::{
+    app::{App, AppState},
+    popup::PopUpState,
+};
 
 pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
     let help = construct_help(app);

@@ -1,4 +1,7 @@
-use super::app::{App, PopUpKind, PopUpState};
+use super::{
+    app::App,
+    popup::{PopUpKind, PopUpState},
+};
 use ratatui::{
     layout::{Constraint, Direction, Layout},
     Frame,
@@ -7,6 +10,7 @@ use ratatui::{
 mod header;
 mod help;
 mod popup;
+
 mod spinner;
 mod table;
 
