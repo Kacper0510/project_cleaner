@@ -1,14 +1,27 @@
 use ratatui::{
-    style::{Color, Stylize},
+    style::{Color, Style},
+    text::{Line, Span},
     widgets::{Cell, Row, TableState},
 };
+use size::Size;
 
 use crate::core::{dir_stats::DirStats, MatchData};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TableData {
     pub state: TableState,
     pub data: Vec<MatchDataUI>,
+    cleanable_space: Size,
+}
+
+impl Default for TableData {
+    fn default() -> Self {
+        Self {
+            state: Default::default(),
+            data: Default::default(),
+            cleanable_space: Size::from_bytes(0),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -22,7 +35,7 @@ pub struct MatchDataUI {
 #[derive(Debug, Clone, PartialEq)]
 enum MatchDataUIStatus {
     Found,
-    Deleted,
+    Selected,
 }
 
 impl TableData {
@@ -38,21 +51,27 @@ impl TableData {
                     .collect::<Vec<String>>()
                     .join(" ");
 
-                let row = Row::new(vec![
+                let line = match ele.status {
+                    MatchDataUIStatus::Selected => {
+                        vec![
+                            Span::styled("[del]", Style::default().fg(Color::Red)),
+                            Span::from(" "),
+                            Span::from(ele.data.path.display().to_string()),
+                        ]
+                    },
+                    MatchDataUIStatus::Found => vec![Span::from(ele.data.path.display().to_string())],
+                };
+
+                Row::new(vec![
                     Cell::new(icons),
-                    Cell::new(ele.data.path.display().to_string()),
+                    Cell::new(Line::from(line)),
                     Cell::new(if let Some(s) = &ele.dir_stats.last_mod_days() {
                         format!("{}d", s)
                     } else {
                         "---".to_owned()
                     }),
                     Cell::new(if let Some(s) = &ele.dir_stats.size { format!("{}", s) } else { "---".to_owned() }),
-                ]);
-                if ele.status == MatchDataUIStatus::Deleted {
-                    row.bg(Color::Red)
-                } else {
-                    row
-                }
+                ])
             })
             .collect()
     }
@@ -66,6 +85,17 @@ impl TableData {
             status: MatchDataUIStatus::Found,
         });
         self.resort();
+    }
+
+    pub fn update_match(&mut self, idx: usize, data: DirStats) -> bool {
+        if let Some(ele) = self.get_by_idx_mut(idx) {
+            ele.dir_stats = data;
+            if let Some(size) = data.size {
+                self.cleanable_space += size;
+                return true;
+            }
+        }
+        false
     }
 
     pub fn resort(&mut self) {
@@ -89,5 +119,44 @@ impl TableData {
     pub fn get_by_idx(&self, idx: usize) -> Option<&MatchDataUI> {
         let idx = self.data.iter().position(|ele| ele.idx == idx);
         idx.map(|idx| &self.data[idx])
+    }
+
+    pub fn get_by_idx_mut(&mut self, idx: usize) -> Option<&mut MatchDataUI> {
+        let idx = self.data.iter().position(|ele| ele.idx == idx);
+        idx.map(|idx| &mut self.data[idx])
+    }
+
+    pub fn toggle_select(&mut self) {
+        if let Some(selected) = self.state.selected() {
+            let ele = &self.data[selected];
+            self.data[selected].status = match ele.status {
+                MatchDataUIStatus::Found => MatchDataUIStatus::Selected,
+                MatchDataUIStatus::Selected => MatchDataUIStatus::Found,
+            }
+        }
+    }
+
+    pub fn is_selected(&self) -> bool {
+        if let Some(selected) = self.state.selected() {
+            self.data[selected].status == MatchDataUIStatus::Selected
+        } else {
+            false
+        }
+    }
+
+    pub fn is_any_selected(&self) -> bool {
+        self.data.iter().any(|ele| ele.status == MatchDataUIStatus::Selected)
+    }
+
+    pub fn cleanable_space(&self) -> Size {
+        self.cleanable_space
+    }
+
+    pub fn selected_space(&self) -> Size {
+        self.data
+            .iter()
+            .filter(|ele| ele.status == MatchDataUIStatus::Selected)
+            .filter_map(|ele| ele.dir_stats.size)
+            .fold(Size::from_bytes(0), |prev, current| prev + current)
     }
 }

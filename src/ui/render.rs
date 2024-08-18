@@ -48,8 +48,11 @@ fn render_header(app: &mut App, frame: &mut Frame, area: Rect) {
 
     let accent = Style::default().fg(Color::Cyan);
     let text = vec![
-        Line::from(vec![Span::from("Cleanable space: "), Span::styled(format!("{}", app.cleanable_space), accent)]),
-        Line::from(vec![Span::from("Saved space: "), Span::styled(format!("{}", app.saved_space), accent)]),
+        Line::from(vec![
+            Span::from("Cleanable space: "),
+            Span::styled(format!("{}", app.table.cleanable_space()), accent),
+        ]),
+        Line::from(vec![Span::from("Selected: "), Span::styled(format!("{}", app.table.selected_space()), accent)]),
     ];
 
     let logo = Paragraph::new(text).alignment(Alignment::Center);
@@ -98,31 +101,10 @@ fn render_table(app: &mut App, frame: &mut Frame, area: Rect) {
 }
 
 fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
-    let help = match app.popup_state {
-        super::app::PopUpState::Open => {
-            vec!["Close [q]"]
-        },
-        super::app::PopUpState::Closed => match app.state {
-            AppState::Done => {
-                if app.is_selected() {
-                    vec!["Scroll [↑↓]", "Delete [d]", "Info [i]", "Reload [r]", "Exit [q]"]
-                } else {
-                    vec!["Scroll [↑↓]", "Reload [r]", "Exit [q]"]
-                }
-            },
-            _ => {
-                if app.is_selected() {
-                    vec!["Scroll [↑↓]", "Delete [d]", "Info [i]", "Exit [q]"]
-                } else {
-                    vec!["Scroll [↑↓]", "Exit [q]"]
-                }
-            },
-        },
-    }
-    .into_iter()
-    .map(|e| format!(" {e} "));
+    let help = construct_help(app);
 
-    let constraints = help.clone().map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
+    let constraints =
+        help.clone().into_iter().map(|e| Constraint::Length(e.graphemes(true).count().try_into().unwrap()));
 
     let line = Layout::default()
         .direction(Direction::Horizontal)
@@ -132,7 +114,7 @@ fn render_help(app: &mut App, frame: &mut Frame, area: Rect) {
         .flex(Flex::Start)
         .split(area);
 
-    for (i, h) in help.enumerate() {
+    for (i, h) in help.into_iter().enumerate() {
         let txt = Paragraph::new(h).fg(Color::Gray).bg(Color::DarkGray);
         frame.render_widget(txt, line[i]);
     }
@@ -205,4 +187,38 @@ fn render_info_popup(app: &mut App, frame: &mut Frame, area: Rect, match_data_id
     );
     frame.render_widget(container, popup_l2[0]);
     Some(())
+}
+
+fn construct_help(app: &App) -> Vec<String> {
+    let mut res = vec![];
+
+    match app.popup_state {
+        super::app::PopUpState::Open => {
+            res.push((10, "Close [q]"));
+        },
+        super::app::PopUpState::Closed => {
+            res.push((0, "Scroll [↑↓]"));
+            res.push((10, "Exit [q]"));
+
+            if app.state == AppState::Done {
+                res.push((9, "Reload [r]"))
+            }
+
+            if app.is_highlighted() {
+                res.push((1, "Info [i]"));
+                if app.table.is_selected() {
+                    res.push((2, "Unselect [˽]"));
+                } else {
+                    res.push((2, "Select [˽]"));
+                }
+            }
+
+            if app.table.is_any_selected() {
+                res.push((5, "Delete [d]"))
+            }
+        },
+    };
+
+    res.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    res.iter().map(|e| format!(" {} ", e.1)).collect()
 }

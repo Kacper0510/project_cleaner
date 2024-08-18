@@ -7,7 +7,6 @@ use crate::{
     },
     walk_directories,
 };
-use size::Size;
 use std::{
     env, error,
     sync::mpsc::{Receiver, Sender},
@@ -37,15 +36,17 @@ type Channel<T> = (Sender<T>, Receiver<T>);
 pub struct App {
     pub args: Args,
     pub running: bool,
+
     pub table: TableData,
     pub throbber_state: ThrobberState,
+
     pub state: AppState,
     pub popup_state: PopUpState,
+
     pub dir_stats_channel: Channel<(usize, DirStats)>,
     pub walker_channel: Channel<MatchData>,
     pub handle: Vec<JoinHandle<()>>,
-    pub cleanable_space: Size,
-    pub saved_space: Size,
+
     pub info_index: Option<usize>,
 }
 
@@ -62,8 +63,6 @@ impl App {
             dir_stats_channel: std::sync::mpsc::channel(),
             walker_channel: std::sync::mpsc::channel(),
             handle: vec![],
-            cleanable_space: Size::from_bytes(0),
-            saved_space: Size::from_bytes(0),
             info_index: None,
         }
     }
@@ -88,13 +87,8 @@ impl App {
 
         let mut updated = false;
         while let Ok((idx, data)) = self.dir_stats_channel.1.try_recv() {
-            if let Some(idx) = self.table.data.iter().position(|ele| ele.idx == idx) {
-                self.table.data[idx].dir_stats = data;
-                if let Some(size) = data.size {
-                    updated = true;
-                    self.cleanable_space += size;
-                }
-            }
+            let res = self.table.update_match(idx, data);
+            updated = updated || res;
         }
         if updated {
             self.table.resort();
@@ -145,8 +139,6 @@ impl App {
     }
 
     pub fn reload(&mut self) {
-        self.cleanable_space = Size::from_bytes(0);
-        self.saved_space = Size::from_bytes(0);
         self.table = TableData::default();
         self.popup_state = PopUpState::Closed;
         self.run();
@@ -164,8 +156,13 @@ impl App {
         self.info_index = None;
     }
 
-    pub fn is_selected(&self) -> bool {
+    pub fn is_highlighted(&self) -> bool {
         self.table.state.selected().is_some()
+    }
+
+    pub fn toggle_select(&mut self) {
+        self.table.toggle_select();
+        self.list_down();
     }
 
     pub fn delete(&mut self) {}
