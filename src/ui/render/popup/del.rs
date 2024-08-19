@@ -26,7 +26,7 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect, kind: DeletePopUpKin
             let p = Paragraph::new(vec![Line::from(vec![
                 Span::from("Do you want to "),
                 Span::styled("permanently", Style::default().underlined().fg(Color::Red)),
-                Span::from(format!(" delete {} {}?", count, if count > 1 { "directories" } else { "directoire" })),
+                Span::from(format!(" delete {} {}?", count, if count > 1 { "directories" } else { "directory" })),
             ])
             .alignment(Alignment::Center)
             .style(Style::default().bold().fg(Color::Cyan))]);

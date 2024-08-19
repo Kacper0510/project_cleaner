@@ -1,5 +1,5 @@
 use std::{
-    fs::remove_dir_all,
+    fs::{metadata, remove_dir_all, remove_file},
     path::PathBuf,
     thread::{self, available_parallelism, JoinHandle},
 };
@@ -13,7 +13,13 @@ pub fn dir_rm_parallel(data: Vec<PathBuf>) -> Vec<JoinHandle<()>> {
         .map(|chunk| {
             thread::spawn(move || {
                 for ele in chunk {
-                    let _ = remove_dir_all(ele);
+                    if let Ok(data) = metadata(ele.clone()) {
+                        if data.is_dir() {
+                            let _ = remove_dir_all(ele);
+                        } else {
+                            let _ = remove_file(ele);
+                        };
+                    }
                 }
             })
         })

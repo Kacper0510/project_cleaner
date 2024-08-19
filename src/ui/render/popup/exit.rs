@@ -26,11 +26,7 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
             .alignment(Alignment::Center)
             .style(Style::default().bold().fg(Color::Cyan)),
         Line::from(vec![
-            Span::from(format!(
-                "Selected delete {} {} will ",
-                count,
-                if count > 1 { "directories" } else { "directoire" }
-            )),
+            Span::from(format!("The {} selected {} will ", count, if count > 1 { "directories" } else { "directory" })),
             Span::styled("not", Style::default().underlined().fg(Color::Red)),
             Span::from(" be deleted."),
         ])

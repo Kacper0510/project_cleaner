@@ -43,7 +43,7 @@ impl TableData {
             dir_stats: DirStats::default(),
             status: MatchDataUIStatus::Found,
         });
-        self.resort();
+        self.sort();
     }
 
     pub fn update_match(&mut self, idx: usize, data: DirStats) -> bool {
@@ -57,7 +57,7 @@ impl TableData {
         false
     }
 
-    pub fn resort(&mut self) {
+    pub fn sort(&mut self) {
         let idx = if let Some(selected) = self.state.selected() {
             let path = self.data[selected].idx;
             Some(path)

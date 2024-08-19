@@ -90,7 +90,7 @@ impl App {
             updated = updated || res;
         }
         if updated {
-            self.table.resort();
+            self.table.sort();
         }
 
         if self.handle.iter().all(|h| h.is_finished()) {
