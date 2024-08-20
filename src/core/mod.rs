@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
     sync::mpsc::Sender,
 };
+use tracing::info;
 
 #[derive(Debug, Default, Clone)]
 struct WalkerCache {
@@ -70,6 +71,7 @@ impl LangData {
 
 pub fn walk_directories<F>(root_path: &Path, sender: Sender<MatchData>, mut progress_callback: F)
 where F: FnMut(Result<PathBuf>) {
+    info!("Starting scan...");
     let iter = WalkDirGeneric::<WalkerCache>::new(root_path)
         .root_read_dir_state(WalkerCache::new(sender))
         .skip_hidden(false)
