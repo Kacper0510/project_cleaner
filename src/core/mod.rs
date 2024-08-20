@@ -1,13 +1,14 @@
 use jwalk::*;
+use matching_state::MatchDataBuilder;
 use std::{
-    fmt,
-    path::{Path, PathBuf},
-    sync::mpsc::Sender,
+    any::TypeId, collections::HashMap, fmt, path::{Path, PathBuf}, sync::mpsc::Sender
 };
+
+type InheritedFiles = HashMap<TypeId, Vec<PathBuf>>;
 
 #[derive(Debug, Default, Clone)]
 struct WalkerCache {
-    important_files: Vec<PathBuf>,
+    inherited_files: InheritedFiles,
     sender: Option<Sender<MatchData>>,
 }
 
@@ -15,7 +16,7 @@ impl WalkerCache {
     fn new(sender: Sender<MatchData>) -> Self {
         let sender = Some(sender);
         Self {
-            important_files: vec![],
+            inherited_files: HashMap::new(),
             sender,
         }
     }
@@ -38,11 +39,37 @@ pub trait Heuristic {
     fn check_for_matches(&self, state: &mut MatchingState);
 }
 
+impl fmt::Debug for dyn Heuristic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:#?}", self.info())
+    }
+}
+
+impl fmt::Display for dyn Heuristic {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.info())
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MatchData {
     pub path: PathBuf,
-    pub weight: i32,
-    pub reasons: Vec<LangData>,
+    pub group: PathBuf,
+    other_data: MatchDataBuilder,
+}
+
+impl MatchData {
+    pub fn weight(&self) -> u32 {
+        self.other_data.weight as u32
+    }
+
+    pub fn languages(&self) -> &[LangData] {
+        &self.other_data.reasons
+    }
+
+    pub fn hidden(&self) -> bool {
+        self.other_data.hidden
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -65,7 +92,7 @@ impl fmt::Display for LangData {
 }
 
 impl LangData {
-    pub fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
+    pub const fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
         Self {
             name,
             icon,
@@ -85,10 +112,10 @@ where F: FnMut(Result<PathBuf>) {
     let iter = WalkDirGeneric::<WalkerCache>::new(root_path)
         .root_read_dir_state(WalkerCache::new(sender))
         .skip_hidden(false)
-        .process_read_dir(|_depth, _path, read_dir_state, children| {
+        .process_read_dir(|_depth, path, read_dir_state, children| {
             let mut filtered_children: Vec<&mut Entry> =
                 children.iter_mut().map(Result::as_mut).filter_map(|v| v.ok()).collect();
-            let mut state = MatchingState::new(&mut filtered_children, &mut read_dir_state.important_files);
+            let mut state = MatchingState::new(&mut filtered_children, &mut read_dir_state.inherited_files, path);
             for heuristic in super::ALL_HEURISTICS {
                 state.current_heuristic = Some(heuristic);
                 heuristic.check_for_matches(&mut state);

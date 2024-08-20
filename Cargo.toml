@@ -13,11 +13,11 @@ clap = { version = "4.5.15", features = ["derive"], optional = true }
 ratatui = { version = "0.28.0", optional = true }
 jwalk = "0.8.1"
 throbber-widgets-tui = { version = "0.7.0", optional = true }
-size = { version = "0.4.1", optional = true }
+size = "0.4.1"
 unicode-segmentation = { version = "1.11.0", optional = true }
 
 [features]
-cli = ["dep:clap", "dep:ratatui", "dep:throbber-widgets-tui", "dep:size", "dep:unicode-segmentation"]
+cli = ["dep:clap", "dep:ratatui", "dep:throbber-widgets-tui", "dep:unicode-segmentation"]
 default = ["cli"]
 
 [[bin]]

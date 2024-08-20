@@ -15,7 +15,7 @@ pub fn run(args: super::args::Args) {
         let mut collected = vec![];
         while let Ok(data) = receiver.recv() {
             println!("{}", data.path.display());
-            for reason in &data.reasons {
+            for reason in data.languages() {
                 println!("-> {}", reason);
             }
             collected.push(data.path);
@@ -41,7 +41,7 @@ pub fn run(args: super::args::Args) {
     let confirmed = args.delete_instantly || {
         let form = if results.len() == 1 { "directory" } else { "directories" };
         println!("Do you want to permanently delete the {} {} listed above?", results.len(), form);
-        print!("WARNING: this action is irreversible! [Y/N] ");
+        print!("WARNING: this action is irreversible! [y/N] ");
         let _ = stdout().flush();
         let mut buffer = String::new();
         if stdin().read_line(&mut buffer).is_err() {

@@ -27,7 +27,7 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
     ];
     let mut other: Vec<Line> = match_data
         .data
-        .reasons
+        .languages()
         .iter()
         .flat_map(|ele| {
             let mut res = vec![Line::from(vec![Span::from(if app.args.no_icons {
