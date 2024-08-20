@@ -28,6 +28,8 @@ impl ClientState for WalkerCache {
 
 type Entry = DirEntry<WalkerCache>;
 
+pub mod dir_rm;
+pub mod dir_stats;
 mod matching_state;
 pub use matching_state::MatchingState;
 
@@ -47,6 +49,7 @@ pub struct MatchData {
 pub struct LangData {
     pub name: &'static str,
     pub icon: &'static str,
+    pub short: &'static str,
     pub comment: Option<String>,
 }
 
@@ -62,10 +65,11 @@ impl fmt::Display for LangData {
 }
 
 impl LangData {
-    pub fn new(name: &'static str, icon: &'static str) -> Self {
+    pub fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
         Self {
             name,
             icon,
+            short,
             comment: None,
         }
     }

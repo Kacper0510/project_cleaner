@@ -1,18 +1,19 @@
-use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::io;
 
 use crate::args::*;
 
 mod app;
-use app::App;
+use app::{App, AppResult};
 
 mod event;
 use event::{Event, EventHandler};
 
 mod handler;
-use handler::handle_key_events;
+use handler::{handle_key_events, handle_mouse_events};
 
+mod model;
+mod popup;
 mod render;
 
 mod tui;
@@ -21,6 +22,7 @@ use tui::Tui;
 pub fn run(args: Args) -> AppResult<()> {
     // Create an application.
     let mut app = App::new(args);
+    app.run();
 
     // Initialize the terminal user interface.
     let backend = CrosstermBackend::new(io::stderr());
@@ -37,8 +39,8 @@ pub fn run(args: Args) -> AppResult<()> {
         match tui.events.next()? {
             Event::Tick => app.tick(),
             Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
+            Event::Mouse(mouse_event) => handle_mouse_events(mouse_event, &mut app)?,
+            Event::Resize(..) => {},
         }
     }
 
