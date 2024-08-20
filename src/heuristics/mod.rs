@@ -1,5 +1,6 @@
 use crate::core::{Heuristic, LangData, MatchingState};
 
-mod cargo_target;
+mod rust;
+mod unity;
 
-pub const ALL_HEURISTICS: [&dyn Heuristic; 1] = [&cargo_target::INSTANCE];
+pub const ALL_HEURISTICS: [&dyn Heuristic; 2] = [&rust::INSTANCE, &unity::INSTANCE];

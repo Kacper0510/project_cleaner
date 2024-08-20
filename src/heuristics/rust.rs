@@ -1,11 +1,11 @@
 use super::*;
 
 #[derive(Default)]
-pub struct CargoTarget;
+pub struct Rust;
 
-pub const INSTANCE: CargoTarget = CargoTarget;
+pub const INSTANCE: Rust = Rust;
 
-impl Heuristic for CargoTarget {
+impl Heuristic for Rust {
     fn info(&self) -> LangData {
         LangData::new("Rust", "", "rs")
     }
