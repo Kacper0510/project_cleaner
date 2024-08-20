@@ -1,60 +1,51 @@
-use std::error;
-
-use ratatui::widgets::{Cell, Row, TableState};
-use size::Size;
-use throbber_widgets_tui::ThrobberState;
-
+use super::{
+    model::TableData,
+    popup::{DeletePopUpKind, PopUpKind, PopUpState},
+};
 use crate::{
     args::Args,
-    core::{LangData, MatchData},
+    core::{
+        dir_rm,
+        dir_stats::{dir_stats_parallel, DirStats},
+        MatchData,
+    },
+    walk_directories,
 };
+use std::{
+    env, error,
+    sync::mpsc::{Receiver, Sender},
+    thread::JoinHandle,
+};
+use throbber_widgets_tui::ThrobberState;
 
-/// Application result type.
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
-/// Application.
+#[derive(Debug, PartialEq)]
+pub enum AppState {
+    Scanning,
+    Calculating,
+    Done,
+}
+
+type Channel<T> = (Sender<T>, Receiver<T>);
+
 #[derive(Debug)]
 pub struct App {
-    pub args: Args, // TODO: use args
+    pub args: Args,
     pub running: bool,
+
     pub table: TableData,
     pub throbber_state: ThrobberState,
-}
-#[derive(Debug, Clone, Default)]
-pub struct TableData {
-    pub state: TableState,
-    pub data: Vec<MatchDataUI>,
-}
 
-#[derive(Debug, Clone)]
-pub struct MatchDataUI {
-    pub data: MatchData,
-    pub size: Option<Size>,
-    pub status: MatchDataUIStatus,
-}
+    pub state: AppState,
+    pub popup_state: PopUpState,
 
-#[derive(Debug, Clone)]
-enum MatchDataUIStatus {
-    FOUND,
-    DELETED,
-}
+    pub dir_stats_channel: Channel<(usize, DirStats)>,
+    pub walker_channel: Channel<MatchData>,
+    pub handle: Vec<JoinHandle<()>>,
+    pub del_handle: Vec<JoinHandle<()>>,
 
-impl TableData {
-    pub fn to_rows(&self) -> Vec<Row> {
-        self.data
-            .iter()
-            .map(|ele| {
-                let icons = ele.data.reasons.iter().map(|e| e.icon.to_owned()).collect::<Vec<String>>().join(" ");
-
-                Row::new(vec![
-                    Cell::new(icons),
-                    Cell::new(ele.data.path.display().to_string()),
-                    Cell::new(if let Some(s) = ele.size { format!("{}", s) } else { "---".to_owned() }),
-                    Cell::new("lol"),
-                ])
-            })
-            .collect()
-    }
+    pub info_index: Option<usize>,
 }
 
 impl App {
@@ -65,18 +56,75 @@ impl App {
             running: true,
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
+            state: AppState::Scanning,
+            popup_state: PopUpState::Closed,
+            dir_stats_channel: std::sync::mpsc::channel(),
+            walker_channel: std::sync::mpsc::channel(),
+            handle: vec![],
+            del_handle: vec![],
+            info_index: None,
         }
+    }
+
+    pub fn run(&mut self) {
+        self.state = AppState::Scanning;
+        self.handle = vec![];
+        let path = self.args.path.clone().unwrap_or(env::current_dir().unwrap());
+
+        let tx = self.walker_channel.0.clone();
+        let handle = std::thread::spawn(move || walk_directories(&path, tx, |_path| {}));
+        self.handle.push(handle);
     }
 
     /// Handles the tick event of the terminal.
     pub fn tick(&mut self) {
         self.throbber_state.calc_next();
 
-        // TODO: read channel
+        while let Ok(data) = self.walker_channel.1.try_recv() {
+            self.table.add_match(data);
+        }
+
+        let mut updated = false;
+        while let Ok((idx, data)) = self.dir_stats_channel.1.try_recv() {
+            let res = self.table.update_match(idx, data);
+            updated = updated || res;
+        }
+        if updated {
+            self.table.sort();
+        }
+
+        if self.handle.iter().all(|h| h.is_finished()) {
+            self.handle = vec![];
+            self.state = match self.state {
+                AppState::Scanning => {
+                    self.handle = dir_stats_parallel(
+                        self.table.data.clone().into_iter().map(|ele| (ele.idx, ele.data.path)).collect(),
+                        self.dir_stats_channel.0.clone(),
+                    );
+                    AppState::Calculating
+                },
+                AppState::Done | AppState::Calculating => AppState::Done,
+            }
+        }
+
+        if self.popup_state == PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Deleting))
+            && self.del_handle.iter().all(|h| h.is_finished())
+        {
+            self.popup_state = PopUpState::Closed;
+            self.del_handle = vec![];
+            self.reload();
+        }
     }
 
-    /// Set running to false to quit the application.
     pub fn quit(&mut self) {
+        if self.table.is_any_selected() {
+            self.popup_state = PopUpState::Open(PopUpKind::Exit);
+        } else {
+            self.running = false;
+        }
+    }
+
+    pub fn force_quit(&mut self) {
         self.running = false;
     }
 
@@ -102,5 +150,44 @@ impl App {
                 e + 1
             }
         }));
+    }
+
+    pub fn reload(&mut self) {
+        self.table = TableData::default();
+        self.popup_state = PopUpState::Closed;
+        self.del_handle = vec![];
+        self.run();
+    }
+
+    pub fn show_info(&mut self) {
+        if let Some(selected) = self.table.state.selected() {
+            self.popup_state = PopUpState::Open(PopUpKind::Info);
+            self.info_index = Some(self.table.data[selected].idx);
+        }
+    }
+
+    pub fn hide_info(&mut self) {
+        self.popup_state = PopUpState::Closed;
+        self.info_index = None;
+    }
+
+    pub fn is_highlighted(&self) -> bool {
+        self.table.state.selected().is_some()
+    }
+
+    pub fn toggle_select(&mut self) {
+        self.table.toggle_select();
+        self.list_down();
+    }
+
+    pub fn delete(&mut self) {
+        if self.table.is_any_selected() {
+            self.popup_state = PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Confirm));
+        }
+    }
+
+    pub fn confirm_delete(&mut self) {
+        self.del_handle = dir_rm::dir_rm_parallel(self.table.get_selected_path());
+        self.popup_state = PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Deleting));
     }
 }

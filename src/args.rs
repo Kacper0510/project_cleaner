@@ -6,4 +6,7 @@ pub struct Args {
     /// Disable usage of Nerd Fonts icons
     #[arg(long)]
     pub no_icons: bool,
+
+    #[arg(short,long,value_name = "DIR", value_hint = clap::ValueHint::DirPath)]
+    pub path: Option<std::path::PathBuf>,
 }
