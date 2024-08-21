@@ -31,11 +31,11 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
         .iter()
         .flat_map(|ele| {
             let mut res = vec![Line::from(vec![Span::from(if app.args.no_icons {
-                format!("- {}", ele.name)
+                format!("- {}", ele.name())
             } else {
-                format!("- {} {}", ele.icon, ele.name)
+                format!("- {} {}", ele.icon(), ele.name())
             })])];
-            if let Some(comment) = &ele.comment {
+            if let Some(comment) = &ele.comment() {
                 res.push(Line::from(vec![Span::styled(format!("  {}", comment), small_style)]))
             }
             res

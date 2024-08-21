@@ -35,7 +35,7 @@ fn table_data_to_rows(data: &TableData, no_icons: bool) -> Vec<Row> {
                 .data
                 .languages()
                 .iter()
-                .map(|e| if no_icons { e.short.to_owned() } else { e.icon.to_owned() })
+                .map(|e| if no_icons { e.short().to_owned() } else { e.icon().to_owned() })
                 .collect::<Vec<String>>()
                 .join(" ");
 

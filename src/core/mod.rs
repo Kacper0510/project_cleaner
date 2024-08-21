@@ -1,17 +1,30 @@
 use jwalk::*;
 use std::{
-    any::TypeId, collections::HashMap, path::{Path, PathBuf}, sync::mpsc::Sender
+    any::TypeId,
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::mpsc::Sender,
 };
 
+/// Type for storing files inherited from parent directories.
+/// See [`MatchingState::inherited_files()`].
 type InheritedFiles = HashMap<TypeId, Vec<PathBuf>>;
 
+/// Directory walker cache for storing inherited files and a channel to send matches to.
 #[derive(Debug, Default, Clone)]
 struct WalkerCache {
+    /// Files inherited from parent directories, hashed by heuristic type. Propagated by cloning.
     inherited_files: InheritedFiles,
+    /// Channel to send matches to.
     sender: Option<Sender<MatchData>>,
 }
 
 impl WalkerCache {
+    /// Create a new cache with a specified sender.
+    ///
+    /// Although this type implements [`Default`], the sender is required for the cache to work,
+    /// as it is unwrapped in the [`MatchingState`] methods.
+    #[inline]
     fn new(sender: Sender<MatchData>) -> Self {
         let sender = Some(sender);
         Self {
@@ -26,13 +39,14 @@ impl ClientState for WalkerCache {
     type ReadDirState = Self;
 }
 
+/// Specialized type for directory entries with this module's walker cache.
 type Entry = DirEntry<WalkerCache>;
 
 mod dir_rm;
 pub use dir_rm::dir_rm_parallel;
 
 mod dir_stats;
-pub use dir_stats::{DirStats, dir_stats_parallel};
+pub use dir_stats::{dir_stats_parallel, DirStats};
 
 mod match_data;
 pub use match_data::{MatchData, MatchDataBuilder};
@@ -43,6 +57,12 @@ pub use matching_state::MatchingState;
 mod heuristic;
 pub use heuristic::{Heuristic, LangData};
 
+/// Traverses filesystem and sends heuristic matches to the specified channel.
+///
+/// This function walks the filesystem starting from the specified root path,
+/// collecting matches for each heuristic and sending them to the specified channel.
+/// It also calls the progress callback for each directory visited, whether it is matched or not.
+/// Some directories may be skipped if they are already matched by a parent directory.
 pub fn walk_directories<F>(root_path: &Path, sender: Sender<MatchData>, mut progress_callback: F)
 where F: FnMut(Result<PathBuf>) {
     let iter = WalkDirGeneric::<WalkerCache>::new(root_path)
