@@ -1,59 +1,9 @@
 use super::*;
 use std::{
-    any::Any, ffi::{OsStr, OsString}, iter::Sum, ops::{Add, AddAssign, DerefMut}, path::{Path, PathBuf}
+    any::Any,
+    ffi::{OsStr, OsString},
+    ops::DerefMut,
 };
-
-#[derive(Debug, Clone, Default)]
-pub struct MatchDataBuilder {
-    pub(super) weight: i32,
-    pub(super) reasons: Vec<LangData>,
-    pub(super) hidden: bool,
-}
-
-impl MatchDataBuilder {
-    pub const DEFAULT_WEIGHT: i32 = 1000;
-
-    fn new(lang: LangData) -> Self {
-        Self {
-            reasons: vec![lang],
-            weight: Self::DEFAULT_WEIGHT,
-            ..Self::default()
-        }
-    }
-
-    pub fn weight(&mut self, weight: i32) -> &mut Self {
-        self.weight = weight;
-        self
-    }
-
-    pub fn hidden(&mut self) -> &mut Self {
-        self.hidden = true;
-        self
-    }
-}
-
-impl AddAssign for MatchDataBuilder {
-    fn add_assign(&mut self, rhs: Self) {
-        self.weight += rhs.weight;
-        self.reasons.extend(rhs.reasons);
-        self.hidden |= rhs.hidden;
-    }
-}
-
-impl Add for MatchDataBuilder {
-    type Output = Self;
-
-    fn add(mut self, rhs: Self) -> Self {
-        self += rhs;
-        self
-    }
-}
-
-impl Sum for MatchDataBuilder {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::default(), Add::add)
-    }
-}
 
 pub struct MatchingState<'entries> {
     contents: HashMap<OsString, (&'entries mut Entry, Vec<MatchDataBuilder>)>,

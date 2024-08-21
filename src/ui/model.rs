@@ -1,4 +1,4 @@
-use crate::core::{dir_stats::DirStats, MatchData};
+use crate::core::{DirStats, MatchData};
 use ratatui::widgets::TableState;
 use size::Size;
 use std::path::PathBuf;

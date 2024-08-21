@@ -4,11 +4,7 @@ use super::{
 };
 use crate::{
     args::Args,
-    core::{
-        dir_rm,
-        dir_stats::{dir_stats_parallel, DirStats},
-        MatchData,
-    },
+    core::{dir_stats_parallel, dir_rm_parallel, DirStats, MatchData},
     walk_directories,
 };
 use std::{
@@ -187,7 +183,7 @@ impl App {
     }
 
     pub fn confirm_delete(&mut self) {
-        self.del_handle = dir_rm::dir_rm_parallel(self.table.get_selected_path());
+        self.del_handle = dir_rm_parallel(self.table.get_selected_path());
         self.popup_state = PopUpState::Open(PopUpKind::Delete(DeletePopUpKind::Deleting));
     }
 }

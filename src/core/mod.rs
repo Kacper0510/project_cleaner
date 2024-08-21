@@ -1,7 +1,6 @@
 use jwalk::*;
-use matching_state::MatchDataBuilder;
 use std::{
-    any::TypeId, collections::HashMap, fmt, path::{Path, PathBuf}, sync::mpsc::Sender
+    any::TypeId, collections::HashMap, path::{Path, PathBuf}, sync::mpsc::Sender
 };
 
 type InheritedFiles = HashMap<TypeId, Vec<PathBuf>>;
@@ -29,83 +28,20 @@ impl ClientState for WalkerCache {
 
 type Entry = DirEntry<WalkerCache>;
 
-pub mod dir_rm;
-pub mod dir_stats;
+mod dir_rm;
+pub use dir_rm::dir_rm_parallel;
+
+mod dir_stats;
+pub use dir_stats::{DirStats, dir_stats_parallel};
+
+mod match_data;
+pub use match_data::{MatchData, MatchDataBuilder};
+
 mod matching_state;
 pub use matching_state::MatchingState;
 
-pub trait Heuristic {
-    fn info(&self) -> LangData;
-    fn check_for_matches(&self, state: &mut MatchingState);
-}
-
-impl fmt::Debug for dyn Heuristic {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:#?}", self.info())
-    }
-}
-
-impl fmt::Display for dyn Heuristic {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.info())
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct MatchData {
-    pub path: PathBuf,
-    pub group: PathBuf,
-    other_data: MatchDataBuilder,
-}
-
-impl MatchData {
-    pub fn weight(&self) -> u32 {
-        self.other_data.weight as u32
-    }
-
-    pub fn languages(&self) -> &[LangData] {
-        &self.other_data.reasons
-    }
-
-    pub fn hidden(&self) -> bool {
-        self.other_data.hidden
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct LangData {
-    pub name: &'static str,
-    pub icon: &'static str,
-    pub short: &'static str,
-    pub comment: Option<String>,
-}
-
-impl fmt::Display for LangData {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)?;
-        if let Some(comment) = &self.comment {
-            write!(f, " - {}", comment)
-        } else {
-            Ok(())
-        }
-    }
-}
-
-impl LangData {
-    pub const fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
-        Self {
-            name,
-            icon,
-            short,
-            comment: None,
-        }
-    }
-
-    pub fn comment(mut self, comment: &str) -> Self {
-        self.comment = Some(comment.to_owned());
-        self
-    }
-}
+mod heuristic;
+pub use heuristic::{Heuristic, LangData};
 
 pub fn walk_directories<F>(root_path: &Path, sender: Sender<MatchData>, mut progress_callback: F)
 where F: FnMut(Result<PathBuf>) {
