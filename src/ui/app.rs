@@ -82,7 +82,7 @@ impl App {
         self.throbber_state.calc_next();
 
         while let Ok(data) = self.walker_channel.1.try_recv() {
-            info!("UI got new math path: {:?}", data.path);
+            info!("UI got new match path: {:?}", data.path);
 
             self.table.add_match(data);
         }
