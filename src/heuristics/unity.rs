@@ -24,9 +24,8 @@ heuristic!(Unity, "󰚯", "unity", state, {
     {
         for dir in DIRS {
             if state.has_directory(dir).is_some() {
-                state.add_weight_with_comment(
+                state.add_match(
                     dir,
-                    1000,
                     &format!("Unity project: Found Assets, Packages, ProjectSettings and {dir} directory."),
                 );
             }

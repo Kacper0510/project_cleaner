@@ -3,6 +3,7 @@ use crate::core::{Heuristic, LangData, MatchingState};
 mod rust;
 mod unity;
 
+/// A list of all heuristics implemented by default in this crate.
 pub const ALL_HEURISTICS: [&dyn Heuristic; 2] = [&rust::INSTANCE, &unity::INSTANCE];
 
 #[macro_export]

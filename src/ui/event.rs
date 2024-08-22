@@ -1,4 +1,4 @@
-use super::app::AppResult;
+use super::AppResult;
 use ratatui::crossterm::event::{
     self, Event as CrosstermEvent, KeyEvent, KeyEventKind, MouseEvent,
 };
