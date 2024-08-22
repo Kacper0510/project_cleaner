@@ -23,7 +23,7 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
             Style::default().bold().fg(Color::Cyan),
         )]),
         Line::from(vec![]),
-        Line::from(vec![Span::styled("Reasons: ", Style::default().bold())]),
+        Line::from(vec![Span::styled("Languages: ", Style::default().bold())]),
     ];
     let mut other: Vec<Line> = match_data
         .data

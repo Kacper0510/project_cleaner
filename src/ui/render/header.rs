@@ -10,7 +10,7 @@ use crate::ui::app::{App, AppState};
 
 use super::spinner::make_spinner;
 
-const LOGO: &str = include_str!("logo.txt");
+const LOGO: &str = include_str!("../../../resources/logo.txt");
 
 pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
     let header = Layout::default()

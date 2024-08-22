@@ -1,5 +1,5 @@
 use clap::Parser;
-use project_cleaner::{args::*, ui, simple};
+use project_cleaner::{args::{Args, AppResult}, ui, simple};
 
 fn main() -> AppResult<()> {
     let args = Args::parse();

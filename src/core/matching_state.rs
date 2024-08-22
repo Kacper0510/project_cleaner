@@ -1,16 +1,19 @@
-use super::*;
+use super::{Entry, Heuristic, InheritedFiles, MatchData, MatchParameters};
 use std::{
     any::Any,
+    collections::HashMap,
     ffi::{OsStr, OsString},
     ops::DerefMut,
+    path::{Path, PathBuf},
+    sync::mpsc::Sender,
 };
 
 /// State passed to heuristics to manipulate matches and query current directory contents.
 ///
 /// Only this type should be used to interact with the filesystem and return meaningful heuristic result to the user.
 pub struct MatchingState<'entries> {
-    /// Optimized storage for current direcotry contents.
-    contents: HashMap<OsString, (&'entries mut Entry, Vec<MatchDataBuilder>)>,
+    /// Optimized storage for current directory contents.
+    contents: HashMap<OsString, (&'entries mut Entry, Vec<MatchParameters>)>,
     /// Path of the current directory.
     parent_path: &'entries Path,
     /// Current heuristic being processed.
@@ -42,16 +45,16 @@ impl<'entries> MatchingState<'entries> {
     ///
     /// Panics if the channel is closed, which should not happen in normal operation.
     pub(super) fn process_collected_data(&mut self, sender: &Sender<MatchData>) {
-        for (_, (entry, md)) in self.contents.drain() {
-            let md: MatchDataBuilder = md.into_iter().sum();
-            if md.weight <= 0 {
+        for (_, (entry, params)) in self.contents.drain() {
+            let accumulated_params: MatchParameters = params.into_iter().sum();
+            if accumulated_params.weight <= 0 {
                 continue;
             }
             entry.read_children_path = None;
             let data = MatchData {
                 path: entry.path(),
                 group: self.parent_path.to_owned(),
-                other_data: md,
+                params: accumulated_params,
             };
             sender.send(data).expect("Sender error (did UI panic?)");
         }
@@ -97,13 +100,13 @@ impl<'entries> MatchingState<'entries> {
     /// Adds a match for the file or directory selected with the `name` parameter.
     ///
     /// The `comment` parameter is used to describe the match and is displayed to the user.
-    /// Additional match options may be changed by calling methods on the returned builder.
+    /// Additional match options may be changed by calling methods of the returned reference.
     ///
     /// # Panics
     ///
     /// Panics if the specified file or directory does not exist in the current directory.
-    pub fn add_match(&mut self, name: &str, comment: &str) -> &mut MatchDataBuilder {
-        let new = MatchDataBuilder::new(self.current_heuristic.unwrap().info().with_comment(comment));
+    pub fn add_match(&mut self, name: &str, comment: &str) -> &mut MatchParameters {
+        let new = MatchParameters::new(self.current_heuristic.unwrap().info().with_comment(comment));
         if let Some((_, v)) = self.contents.get_mut(OsStr::new(name)) {
             v.push(new);
             v.last_mut().unwrap()

@@ -15,8 +15,8 @@ pub fn run(args: super::args::Args) {
         let mut collected = vec![];
         while let Ok(data) = receiver.recv() {
             println!("{}", data.path.display());
-            for reason in data.languages() {
-                println!("-> {}", reason);
+            for language in data.languages() {
+                println!("-> {}", language);
             }
             collected.push(data.path);
         }

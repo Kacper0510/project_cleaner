@@ -49,7 +49,7 @@ mod dir_stats;
 pub use dir_stats::{dir_stats_parallel, DirStats};
 
 mod match_data;
-pub use match_data::{MatchData, MatchDataBuilder};
+pub use match_data::{MatchData, MatchParameters};
 
 mod matching_state;
 pub use matching_state::MatchingState;
