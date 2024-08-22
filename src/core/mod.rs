@@ -5,6 +5,7 @@ use std::{
     path::{Path, PathBuf},
     sync::mpsc::Sender,
 };
+use tracing::info;
 
 /// Type for storing files inherited from parent directories.
 /// See [`MatchingState::inherited_files()`].
@@ -65,6 +66,7 @@ pub use heuristic::{Heuristic, LangData};
 /// Some directories may be skipped if they are already matched by a parent directory.
 pub fn walk_directories<F>(root_path: &Path, sender: Sender<MatchData>, mut progress_callback: F)
 where F: FnMut(Result<PathBuf>) {
+    info!("Starting scan...");
     let iter = WalkDirGeneric::<WalkerCache>::new(root_path)
         .root_read_dir_state(WalkerCache::new(sender))
         .skip_hidden(false)

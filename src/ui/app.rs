@@ -13,6 +13,7 @@ use std::{
     thread::JoinHandle,
 };
 use throbber_widgets_tui::ThrobberState;
+use tracing::info;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -77,11 +78,14 @@ impl App {
         self.throbber_state.calc_next();
 
         while let Ok(data) = self.walker_channel.1.try_recv() {
+            info!("UI got new match path: {:?}", data.path);
+
             self.table.add_match(data);
         }
 
         let mut updated = false;
         while let Ok((idx, data)) = self.dir_stats_channel.1.try_recv() {
+            info!("UI got dir stats (idx={idx})");
             let res = self.table.update_match(idx, data);
             updated = updated || res;
         }

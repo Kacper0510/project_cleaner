@@ -15,11 +15,16 @@ jwalk = "0.8.1"
 throbber-widgets-tui = { version = "0.7.0", optional = true }
 size = "0.4.1"
 unicode-segmentation = { version = "1.11.0", optional = true }
+tracing-error = { version = "0.2.0", optional = true }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"], optional = true }
+directories = { version = "5.0.1", optional = true }
 
 [features]
-cli = ["dep:clap", "dep:ratatui", "dep:throbber-widgets-tui", "dep:unicode-segmentation"]
+cli = ["dep:clap", "dep:ratatui", "dep:throbber-widgets-tui", "dep:unicode-segmentation", "dep:tracing-error", "dep:tracing-subscriber", "dep:directories"]
 default = ["cli"]
 
 [[bin]]
 name = "project_cleaner"
 required-features = ["cli"]
+

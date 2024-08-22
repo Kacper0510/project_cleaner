@@ -6,6 +6,7 @@ use std::{
     thread::{self, available_parallelism, JoinHandle},
     time::SystemTime,
 };
+use tracing::{error, info};
 
 use jwalk::WalkDir;
 use size::Size;
@@ -64,6 +65,7 @@ impl DirStats {
 
 pub fn dir_stats_parallel(data: Vec<(usize, PathBuf)>, tx: Sender<(usize, DirStats)>) -> Vec<JoinHandle<()>> {
     let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(4);
+    info!("Running dir stats with {} threads.", thread_count);
     let chunks: Vec<_> = data.chunks(thread_count).map(|s| s.to_vec()).collect();
 
     chunks
@@ -72,7 +74,10 @@ pub fn dir_stats_parallel(data: Vec<(usize, PathBuf)>, tx: Sender<(usize, DirSta
             let tx = tx.clone();
             thread::spawn(move || {
                 for (i, ele) in chunk {
-                    let _ = tx.send((i, DirStats::new(ele)));
+                    let res = tx.send((i, DirStats::new(ele)));
+                    if res.is_err() {
+                        error!("Failed to send");
+                    }
                 }
             })
         })
