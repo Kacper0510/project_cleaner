@@ -1,4 +1,4 @@
-use super::app::{App, AppResult};
+use super::{App, AppResult};
 use super::event::EventHandler;
 use super::render;
 use ratatui::backend::Backend;

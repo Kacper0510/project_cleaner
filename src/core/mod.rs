@@ -1,20 +1,34 @@
 use jwalk::*;
 use std::{
+    any::TypeId,
+    collections::HashMap,
     path::{Path, PathBuf},
     sync::mpsc::Sender,
 };
 
+/// Type for storing files inherited from parent directories.
+/// See [`MatchingState::inherited_files()`].
+type InheritedFiles = HashMap<TypeId, Vec<PathBuf>>;
+
+/// Directory walker cache for storing inherited files and a channel to send matches to.
 #[derive(Debug, Default, Clone)]
 struct WalkerCache {
-    important_files: Vec<PathBuf>,
+    /// Files inherited from parent directories, hashed by heuristic type. Propagated by cloning.
+    inherited_files: InheritedFiles,
+    /// Channel to send matches to.
     sender: Option<Sender<MatchData>>,
 }
 
 impl WalkerCache {
+    /// Create a new cache with a specified sender.
+    ///
+    /// Although this type implements [`Default`], the sender is required for the cache to work,
+    /// as it is unwrapped in the [`MatchingState`] methods.
+    #[inline]
     fn new(sender: Sender<MatchData>) -> Self {
         let sender = Some(sender);
         Self {
-            important_files: vec![],
+            inherited_files: HashMap::new(),
             sender,
         }
     }
@@ -25,58 +39,39 @@ impl ClientState for WalkerCache {
     type ReadDirState = Self;
 }
 
+/// Specialized type for directory entries with this module's walker cache.
 type Entry = DirEntry<WalkerCache>;
 
-pub mod dir_rm;
-pub mod dir_stats;
+mod dir_rm;
+pub use dir_rm::dir_rm_parallel;
+
+mod dir_stats;
+pub use dir_stats::{dir_stats_parallel, DirStats};
+
+mod match_data;
+pub use match_data::{MatchData, MatchParameters};
+
 mod matching_state;
 pub use matching_state::MatchingState;
 
-pub trait Heuristic {
-    fn info(&self) -> LangData;
-    fn check_for_matches(&self, state: &mut MatchingState);
-}
+mod heuristic;
+pub use heuristic::{Heuristic, LangData};
 
-#[derive(Debug, Clone)]
-pub struct MatchData {
-    pub path: PathBuf,
-    pub weight: i32,
-    pub reasons: Vec<LangData>,
-}
-
-#[derive(Debug, Clone)]
-pub struct LangData {
-    pub name: &'static str,
-    pub icon: &'static str,
-    pub short: &'static str,
-    pub comment: Option<String>,
-}
-
-impl LangData {
-    pub fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
-        Self {
-            name,
-            icon,
-            short,
-            comment: None,
-        }
-    }
-
-    pub fn comment(mut self, comment: &str) -> Self {
-        self.comment = Some(comment.to_owned());
-        self
-    }
-}
-
+/// Traverses filesystem and sends heuristic matches to the specified channel.
+///
+/// This function walks the filesystem starting from the specified root path,
+/// collecting matches for each heuristic and sending them to the specified channel.
+/// It also calls the progress callback for each directory visited, whether it is matched or not.
+/// Some directories may be skipped if they are already matched by a parent directory.
 pub fn walk_directories<F>(root_path: &Path, sender: Sender<MatchData>, mut progress_callback: F)
 where F: FnMut(Result<PathBuf>) {
     let iter = WalkDirGeneric::<WalkerCache>::new(root_path)
         .root_read_dir_state(WalkerCache::new(sender))
         .skip_hidden(false)
-        .process_read_dir(|_depth, _path, read_dir_state, children| {
+        .process_read_dir(|_depth, path, read_dir_state, children| {
             let mut filtered_children: Vec<&mut Entry> =
                 children.iter_mut().map(Result::as_mut).filter_map(|v| v.ok()).collect();
-            let mut state = MatchingState::new(&mut filtered_children, &mut read_dir_state.important_files);
+            let mut state = MatchingState::new(&mut filtered_children, &mut read_dir_state.inherited_files, path);
             for heuristic in super::ALL_HEURISTICS {
                 state.current_heuristic = Some(heuristic);
                 heuristic.check_for_matches(&mut state);

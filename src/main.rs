@@ -1,7 +1,12 @@
 use clap::Parser;
-use project_cleaner::{args::Args, ui::run};
+use project_cleaner::{args::{Args, AppResult}, ui, simple};
 
-fn main() {
+fn main() -> AppResult<()> {
     let args = Args::parse();
-    let _ = run(args);
+    if args.no_ui {
+        simple::run(args);
+    } else {
+        ui::run(args)?;
+    }
+    Ok(())
 }

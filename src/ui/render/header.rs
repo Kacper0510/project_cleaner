@@ -10,11 +10,7 @@ use crate::ui::app::{App, AppState};
 
 use super::spinner::make_spinner;
 
-const LOGO: &str = r#"   ___             _         __    _______                     
-  / _ \_______    (_)__ ____/ /_  / ___/ /__ ___ ____  ___ ____
- / ___/ __/ _ \  / / -_) __/ __/ / /__/ / -_) _ `/ _ \/ -_) __/
-/_/  /_/  \___/_/ /\__/\__/\__/  \___/_/\__/\_,_/_//_/\__/_/   
-           |___/                                             "#;
+const LOGO: &str = include_str!("../../../resources/logo.txt");
 
 pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
     let header = Layout::default()
