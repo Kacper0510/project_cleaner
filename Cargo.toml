@@ -13,3 +13,8 @@ jwalk = "0.8.1"
 throbber-widgets-tui = "0.7.0"
 size = "0.4.1"
 unicode-segmentation = "1.11.0"
+tracing-error = "0.2.0"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+directories = "5.0.1"
+
