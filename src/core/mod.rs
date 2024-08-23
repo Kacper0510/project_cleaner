@@ -55,7 +55,7 @@ pub use match_data::{MatchData, MatchParameters};
 mod matching_state;
 pub use matching_state::MatchingState;
 
-mod heuristic;
+pub mod heuristic;
 pub use heuristic::{Heuristic, LangData};
 
 /// Traverses filesystem and sends heuristic matches to the specified channel.

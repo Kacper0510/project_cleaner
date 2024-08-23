@@ -11,31 +11,27 @@ use crate::ui::app::App;
 use super::make_popup_layout;
 
 pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
-    let match_data_idx = app.info_index?;
-    let match_data = app.table.get_by_idx(match_data_idx)?;
+    let path = app.info_path.clone()?;
+    let match_data = app.table.get_by_path(&path)?;
 
     let area = make_popup_layout(frame, area);
     let small_style = Style::default().fg(Color::DarkGray);
 
     let mut text = vec![
-        Line::from(vec![Span::styled(
-            match_data.data.path.to_str().unwrap_or("---").to_string(),
-            Style::default().bold().fg(Color::Cyan),
-        )]),
+        Line::from(vec![Span::styled(path.to_str().unwrap(), Style::default().bold().fg(Color::Cyan))]),
         Line::from(vec![]),
         Line::from(vec![Span::styled("Languages: ", Style::default().bold())]),
     ];
     let mut other: Vec<Line> = match_data
-        .data
-        .languages()
+        .languages
         .iter()
         .flat_map(|ele| {
             let mut res = vec![Line::from(vec![Span::from(if app.args.no_icons {
-                format!("- {}", ele.name())
+                format!("- {}", ele.lang.name)
             } else {
-                format!("- {} {}", ele.icon(), ele.name())
+                format!("- {} {}", ele.lang.icon, ele.lang.name)
             })])];
-            if let Some(comment) = &ele.comment() {
+            for comment in &ele.comments {
                 res.push(Line::from(vec![Span::styled(format!("  {}", comment), small_style)]))
             }
             res
@@ -47,12 +43,12 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
         Line::from(vec![Span::styled("Stats: ", Style::default().bold())]),
         Line::from(vec![
             Span::from("Size: "),
-            Span::styled(match_data.dir_stats.size.map(|s| format!("{}", s)).unwrap_or("---".to_owned()), small_style),
+            Span::styled(match_data.stats().size.map(|s| format!("{}", s)).unwrap_or("---".to_owned()), small_style),
         ]),
         Line::from(vec![
             Span::from("Last modification: "),
             Span::styled(
-                match_data.dir_stats.last_mod_days().map(|s| format!("{}d", s)).unwrap_or("---".to_owned()),
+                match_data.stats().last_mod_days().map(|s| format!("{}d", s)).unwrap_or("---".to_owned()),
                 small_style,
             ),
         ]),

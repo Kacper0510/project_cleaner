@@ -1,5 +1,7 @@
 use std::{
     collections::HashSet,
+    iter::Sum,
+    ops::Add,
     os::linux::fs::MetadataExt,
     path::PathBuf,
     sync::mpsc::Sender,
@@ -15,6 +17,30 @@ use size::Size;
 pub struct DirStats {
     pub size: Option<Size>,
     pub last_mod: Option<SystemTime>,
+}
+
+impl Add for DirStats {
+    type Output = DirStats;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let size = if let Some(s) = rhs.size {
+            Some(if let Some(self_s) = self.size { self_s + s } else { s })
+        } else {
+            self.size
+        };
+
+        let last_mod = [self.last_mod, rhs.last_mod].iter().flatten().max().copied();
+        DirStats {
+            size,
+            last_mod,
+        }
+    }
+}
+
+impl Sum for DirStats {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(DirStats::default(), |prev, current| current + prev)
+    }
 }
 
 impl DirStats {

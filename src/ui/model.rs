@@ -1,14 +1,65 @@
-use crate::core::{DirStats, MatchData};
+use crate::core::{heuristic::Lang, DirStats, LangData, MatchData};
 use ratatui::widgets::TableState;
 use size::Size;
 use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
+pub struct MatchGroup {
+    pub hidden: bool,
+    pub group_path: PathBuf,
+    pub status: MatchDataUIStatus,
+    pub languages: Vec<LangDataUI>,
+    pub matches: Vec<MatchDataUI>,
+}
+
+impl MatchGroup {
+    pub fn add_langs(mut self, langs: Vec<LangData>) -> Self {
+        for lang in langs {
+            if let Some(lang_ui) = self.languages.iter_mut().find(|ele| ele.lang == lang.lang) {
+                if let Some(comment) = lang.comment() {
+                    lang_ui.comments.push(comment.to_owned())
+                }
+            } else {
+                self.languages.push(LangDataUI {
+                    lang: lang.lang.clone(),
+                    comments: [lang.comment()].iter().flat_map(|ele| ele.map(|e| e.to_owned())).collect::<Vec<_>>(),
+                })
+            }
+        }
+        self
+    }
+
+    pub fn add_langs_ref(&mut self, langs: &[LangData]) {
+        for lang in langs {
+            if let Some(lang_ui) = self.languages.iter_mut().find(|ele| ele.lang == lang.lang) {
+                if let Some(comment) = lang.comment() {
+                    lang_ui.comments.push(comment.to_owned())
+                }
+            } else {
+                self.languages.push(LangDataUI {
+                    lang: lang.lang.clone(),
+                    comments: [lang.comment()].iter().flat_map(|ele| ele.map(|e| e.to_owned())).collect::<Vec<_>>(),
+                })
+            }
+        }
+    }
+
+    pub fn stats(&self) -> DirStats {
+        self.matches.iter().map(|ele| ele.dir_stats).sum()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct MatchDataUI {
     pub idx: usize,
-    pub data: MatchData,
+    pub path: PathBuf,
     pub dir_stats: DirStats,
-    pub status: MatchDataUIStatus,
+}
+
+#[derive(Debug, Clone)]
+pub struct LangDataUI {
+    pub lang: Lang,
+    pub comments: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -19,14 +70,16 @@ pub enum MatchDataUIStatus {
 
 #[derive(Debug, Clone)]
 pub struct TableData {
+    pub idx: usize,
     pub state: TableState,
-    pub data: Vec<MatchDataUI>,
+    pub data: Vec<MatchGroup>,
     cleanable_space: Size,
 }
 
 impl Default for TableData {
     fn default() -> Self {
         Self {
+            idx: 0,
             state: Default::default(),
             data: Default::default(),
             cleanable_space: Size::from_bytes(0),
@@ -36,18 +89,35 @@ impl Default for TableData {
 
 impl TableData {
     pub fn add_match(&mut self, data: MatchData) {
-        let idx = self.data.len();
-        self.data.push(MatchDataUI {
-            idx,
-            data,
+        let path = data.group.clone();
+
+        let ui_data = MatchDataUI {
+            idx: self.idx,
+            path: data.path.clone(),
             dir_stats: DirStats::default(),
-            status: MatchDataUIStatus::Found,
-        });
-        self.sort();
+        };
+        self.idx += 1;
+
+        if let Some(record) = self.data.iter_mut().find(|ele| ele.group_path == path) {
+            record.add_langs_ref(data.languages());
+            record.matches.push(ui_data);
+        } else {
+            self.data.push(
+                MatchGroup {
+                    hidden: data.hidden(),
+                    group_path: path,
+                    status: MatchDataUIStatus::Found,
+                    languages: vec![],
+                    matches: vec![ui_data],
+                }
+                .add_langs(data.languages().to_vec()),
+            );
+            self.sort();
+        }
     }
 
     pub fn update_match(&mut self, idx: usize, data: DirStats) -> bool {
-        if let Some(ele) = self.get_by_idx_mut(idx) {
+        if let Some(ele) = self.get_match_by_idx_mut(idx) {
             ele.dir_stats = data;
             if let Some(size) = data.size {
                 self.cleanable_space += size;
@@ -58,31 +128,28 @@ impl TableData {
     }
 
     pub fn sort(&mut self) {
-        let idx = if let Some(selected) = self.state.selected() {
-            let path = self.data[selected].idx;
-            Some(path)
+        let path = if let Some(selected) = self.state.selected() {
+            Some(self.data[selected].group_path.clone())
         } else {
             self.state.select(Some(0));
             None
         };
 
-        self.data.sort_by(|a, b| b.dir_stats.size.partial_cmp(&a.dir_stats.size).unwrap());
+        self.data.sort_by(|a, b| b.stats().size.partial_cmp(&a.stats().size).unwrap());
 
-        if let Some(idx) = idx {
-            if let Some(idx) = self.data.iter().position(|ele| ele.idx == idx) {
+        if let Some(path) = path {
+            if let Some(idx) = self.data.iter().position(|ele| ele.group_path == path) {
                 self.state.select(Some(idx))
             }
         }
     }
 
-    pub fn get_by_idx(&self, idx: usize) -> Option<&MatchDataUI> {
-        let idx = self.data.iter().position(|ele| ele.idx == idx);
-        idx.map(|idx| &self.data[idx])
+    pub fn get_by_path(&self, path: &PathBuf) -> Option<&MatchGroup> {
+        self.data.iter().find(|ele| ele.group_path == *path)
     }
 
-    pub fn get_by_idx_mut(&mut self, idx: usize) -> Option<&mut MatchDataUI> {
-        let idx = self.data.iter().position(|ele| ele.idx == idx);
-        idx.map(|idx| &mut self.data[idx])
+    pub fn get_match_by_idx_mut(&mut self, idx: usize) -> Option<&mut MatchDataUI> {
+        self.data.iter_mut().flat_map(|ele| ele.matches.iter_mut()).find(|ele| ele.idx == idx)
     }
 
     pub fn toggle_select(&mut self) {
@@ -111,7 +178,7 @@ impl TableData {
         self.data
             .iter()
             .filter(|ele| ele.status == MatchDataUIStatus::Selected)
-            .map(|ele| ele.data.path.clone())
+            .flat_map(|ele| ele.matches.iter().map(|e| e.path.clone()).collect::<Vec<_>>())
             .collect()
     }
 
@@ -123,7 +190,7 @@ impl TableData {
         self.data
             .iter()
             .filter(|ele| ele.status == MatchDataUIStatus::Selected)
-            .filter_map(|ele| ele.dir_stats.size)
+            .flat_map(|ele| ele.matches.iter().filter_map(|e| e.dir_stats.size).collect::<Vec<_>>())
             .fold(Size::from_bytes(0), |prev, current| prev + current)
     }
 }

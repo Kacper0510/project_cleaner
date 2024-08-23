@@ -4,11 +4,12 @@ use super::{
 };
 use crate::{
     args::Args,
-    core::{dir_stats_parallel, dir_rm_parallel, DirStats, MatchData},
+    core::{dir_rm_parallel, dir_stats_parallel, DirStats, MatchData},
     walk_directories,
 };
 use std::{
     env, error,
+    path::PathBuf,
     sync::mpsc::{Receiver, Sender},
     thread::JoinHandle,
 };
@@ -42,7 +43,7 @@ pub struct App {
     pub handle: Vec<JoinHandle<()>>,
     pub del_handle: Vec<JoinHandle<()>>,
 
-    pub info_index: Option<usize>,
+    pub info_path: Option<PathBuf>,
 }
 
 impl App {
@@ -59,7 +60,7 @@ impl App {
             walker_channel: std::sync::mpsc::channel(),
             handle: vec![],
             del_handle: vec![],
-            info_index: None,
+            info_path: None,
         }
     }
 
@@ -98,7 +99,13 @@ impl App {
             self.state = match self.state {
                 AppState::Scanning => {
                     self.handle = dir_stats_parallel(
-                        self.table.data.clone().into_iter().map(|ele| (ele.idx, ele.data.path)).collect(),
+                        self.table
+                            .data
+                            .clone()
+                            .into_iter()
+                            .flat_map(|ele| ele.matches)
+                            .map(|ele| (ele.idx, ele.path))
+                            .collect(),
                         self.dir_stats_channel.0.clone(),
                     );
                     AppState::Calculating
@@ -162,13 +169,13 @@ impl App {
     pub fn show_info(&mut self) {
         if let Some(selected) = self.table.state.selected() {
             self.popup_state = PopUpState::Open(PopUpKind::Info);
-            self.info_index = Some(self.table.data[selected].idx);
+            self.info_path = Some(self.table.data[selected].group_path.clone());
         }
     }
 
     pub fn hide_info(&mut self) {
         self.popup_state = PopUpState::Closed;
-        self.info_index = None;
+        self.info_path = None;
     }
 
     pub fn is_highlighted(&self) -> bool {
