@@ -1,4 +1,4 @@
-use crate::core::{Heuristic, Lang, MatchingState};
+use crate::core::{ColorIndexed, Heuristic, Lang, MatchingState};
 
 mod rust;
 mod unity;

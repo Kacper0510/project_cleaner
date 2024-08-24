@@ -7,9 +7,29 @@ use std::{
 };
 use tracing::info;
 
+mod dir_rm;
+pub use dir_rm::dir_rm_parallel;
+
+mod dir_stats;
+pub use dir_stats::{dir_stats_parallel, DirStats};
+
+mod match_data;
+pub use match_data::{MatchData, MatchParameters};
+
+mod matching_state;
+pub use matching_state::MatchingState;
+
+mod heuristic;
+pub use heuristic::{CommentedLang, Heuristic, Lang};
+
+mod color;
+pub use color::ColorIndexed;
+
 /// Type for storing files inherited from parent directories.
 /// See [`MatchingState::inherited_files()`].
 type InheritedFiles = HashMap<TypeId, Vec<PathBuf>>;
+/// Specialized type for directory entries with this module's walker cache.
+type Entry = DirEntry<WalkerCache>;
 
 /// Directory walker cache for storing inherited files and a channel to send matches to.
 #[derive(Debug, Default, Clone)]
@@ -39,24 +59,6 @@ impl ClientState for WalkerCache {
     type DirEntryState = ();
     type ReadDirState = Self;
 }
-
-/// Specialized type for directory entries with this module's walker cache.
-type Entry = DirEntry<WalkerCache>;
-
-mod dir_rm;
-pub use dir_rm::dir_rm_parallel;
-
-mod dir_stats;
-pub use dir_stats::{dir_stats_parallel, DirStats};
-
-mod match_data;
-pub use match_data::{MatchData, MatchParameters};
-
-mod matching_state;
-pub use matching_state::MatchingState;
-
-mod heuristic;
-pub use heuristic::{Heuristic, Lang, CommentedLang};
 
 /// Traverses filesystem and sends heuristic matches to the specified channel.
 ///
