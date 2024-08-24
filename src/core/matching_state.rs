@@ -1,4 +1,4 @@
-use super::{Entry, Heuristic, InheritedFiles, MatchData, MatchParameters};
+use super::{Entry, Heuristic, InheritedFiles, MatchData, MatchParameters, CommentedLang};
 use std::{
     any::Any,
     collections::HashMap,
@@ -106,7 +106,10 @@ impl<'entries> MatchingState<'entries> {
     ///
     /// Panics if the specified file or directory does not exist in the current directory.
     pub fn add_match(&mut self, name: &str, comment: &str) -> &mut MatchParameters {
-        let new = MatchParameters::new(self.current_heuristic.unwrap().info().with_comment(comment));
+        let new = MatchParameters::new(CommentedLang {
+            lang: self.current_heuristic.unwrap().info(),
+            comment: comment.to_owned(),
+        });
         if let Some((_, v)) = self.contents.get_mut(OsStr::new(name)) {
             v.push(new);
             v.last_mut().unwrap()

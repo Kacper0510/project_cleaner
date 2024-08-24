@@ -31,12 +31,16 @@ fn table_data_to_rows(data: &TableData, no_icons: bool) -> Vec<Row> {
     data.data
         .iter()
         .map(|ele| {
-            let icons = ele
+            let icons: Vec<_> = ele
                 .languages
                 .iter()
-                .map(|e| if no_icons { e.lang.short.to_owned() } else { e.lang.icon.to_owned() })
-                .collect::<Vec<String>>()
-                .join(" ");
+                .map(|e| {
+                    Span::styled(
+                        if no_icons { format!("{} ", e.lang.short) } else { e.lang.icon.to_owned() },
+                        Color::Indexed(e.lang.color_index),
+                    )
+                })
+                .collect();
 
             let line = match ele.status {
                 MatchDataUIStatus::Selected => {
@@ -50,7 +54,7 @@ fn table_data_to_rows(data: &TableData, no_icons: bool) -> Vec<Row> {
             };
 
             Row::new(vec![
-                Cell::new(icons),
+                Cell::new(Line::from(icons)),
                 Cell::new(Line::from(line)),
                 Cell::new(if let Some(s) = &ele.stats().last_mod_days() {
                     format!("{}d", s)

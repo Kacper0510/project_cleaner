@@ -1,4 +1,7 @@
+use jwalk::WalkDir;
+use size::Size;
 use std::{
+    cmp::Ordering,
     collections::HashSet,
     iter::Sum,
     ops::Add,
@@ -10,13 +13,25 @@ use std::{
 };
 use tracing::{error, info};
 
-use jwalk::WalkDir;
-use size::Size;
-
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct DirStats {
     pub size: Option<Size>,
     pub last_mod: Option<SystemTime>,
+}
+
+impl Ord for DirStats {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.size.cmp(&other.size) {
+            Ordering::Equal => self.last_mod.cmp(&other.last_mod),
+            x => x.reverse(),
+        }
+    }
+}
+
+impl PartialOrd for DirStats {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl Add for DirStats {
