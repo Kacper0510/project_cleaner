@@ -1,3 +1,5 @@
+use ratatui::style::Color;
+
 use super::MatchingState;
 use std::fmt;
 
@@ -37,7 +39,7 @@ pub struct Lang {
     /// Short name/abbreviation of the language or heuristic, used when icons are not supported.
     pub short: &'static str,
     /// [ANSI 8-bit color index](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for the language or heuristic.
-    pub color_index: u8,
+    pub color: Color,
 }
 
 impl fmt::Display for Lang {

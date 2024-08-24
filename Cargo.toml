@@ -13,7 +13,7 @@ clap = { version = "4.5.16", features = ["derive"], optional = true }
 ratatui = { version = "0.28.0", optional = true }
 jwalk = "0.8.1"
 throbber-widgets-tui = { version = "0.7.0", optional = true }
-size = "=0.5.0-preview2"
+size = "0.5.0-preview2"
 unicode-segmentation = { version = "1.11.0", optional = true }
 tracing-error = { version = "0.2.0", optional = true }
 tracing = "0.1.40"

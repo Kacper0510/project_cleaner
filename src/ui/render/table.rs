@@ -37,7 +37,7 @@ fn table_data_to_rows(data: &TableData, no_icons: bool) -> Vec<Row> {
                 .map(|e| {
                     Span::styled(
                         if no_icons { format!("{} ", e.lang.short) } else { e.lang.icon.to_owned() },
-                        Color::Indexed(e.lang.color_index),
+                        e.lang.color,
                     )
                 })
                 .collect();
