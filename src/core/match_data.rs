@@ -1,4 +1,4 @@
-use super::LangData;
+use super::CommentedLang;
 use std::{
     iter::Sum,
     ops::{Add, AddAssign},
@@ -27,7 +27,7 @@ impl MatchData {
 
     /// Returns the reasons for the match, which are mostly different programming languages.
     #[inline]
-    pub fn languages(&self) -> &[LangData] {
+    pub fn languages(&self) -> &[CommentedLang] {
         &self.params.languages
     }
 
@@ -45,7 +45,7 @@ pub struct MatchParameters {
     /// Weight of the match.
     pub(super) weight: i32,
     /// Reasons for the match, mostly different programming languages.
-    pub(super) languages: Vec<LangData>,
+    pub(super) languages: Vec<CommentedLang>,
     /// Whether the match should be hidden/excluded while displaying/deleting files and directories.
     pub(super) hidden: bool,
 }
@@ -54,7 +54,7 @@ impl MatchParameters {
     /// Default weight for a match if not specified via [`Self::weight()`].
     pub const DEFAULT_WEIGHT: i32 = 1000;
 
-    pub(super) fn new(lang: LangData) -> Self {
+    pub(super) fn new(lang: CommentedLang) -> Self {
         Self {
             languages: vec![lang],
             weight: Self::DEFAULT_WEIGHT,

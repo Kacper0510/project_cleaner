@@ -61,6 +61,6 @@ fn construct_help(app: &App) -> Vec<String> {
         },
     };
 
-    res.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    res.sort_by(|a, b| a.0.cmp(&b.0));
     res.iter().map(|e| format!(" {} ", e.1)).collect()
 }

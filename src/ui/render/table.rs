@@ -31,34 +31,37 @@ fn table_data_to_rows(data: &TableData, no_icons: bool) -> Vec<Row> {
     data.data
         .iter()
         .map(|ele| {
-            let icons = ele
-                .data
-                .languages()
+            let icons: Vec<_> = ele
+                .languages
                 .iter()
-                .map(|e| if no_icons { e.short().to_owned() } else { e.icon().to_owned() })
-                .collect::<Vec<String>>()
-                .join(" ");
+                .map(|e| {
+                    Span::styled(
+                        if no_icons { format!("{} ", e.lang.short) } else { e.lang.icon.to_owned() },
+                        Style::default().fg(e.lang.color.into()),
+                    )
+                })
+                .collect();
 
             let line = match ele.status {
                 MatchDataUIStatus::Selected => {
                     vec![
                         Span::styled("[del]", Style::default().fg(Color::Red)),
                         Span::from(" "),
-                        Span::from(ele.data.path.display().to_string()),
+                        Span::from(ele.group_path.display().to_string()),
                     ]
                 },
-                MatchDataUIStatus::Found => vec![Span::from(ele.data.path.display().to_string())],
+                MatchDataUIStatus::Found => vec![Span::from(ele.group_path.display().to_string())],
             };
 
             Row::new(vec![
-                Cell::new(icons),
+                Cell::new(Line::from(icons)),
                 Cell::new(Line::from(line)),
-                Cell::new(if let Some(s) = &ele.dir_stats.last_mod_days() {
+                Cell::new(if let Some(s) = &ele.stats().last_mod_days() {
                     format!("{}d", s)
                 } else {
                     "---".to_owned()
                 }),
-                Cell::new(if let Some(s) = &ele.dir_stats.size { format!("{}", s) } else { "---".to_owned() }),
+                Cell::new(if let Some(s) = &ele.stats().size { format!("{}", s) } else { "---".to_owned() }),
             ])
         })
         .collect()
