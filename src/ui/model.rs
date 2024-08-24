@@ -1,7 +1,7 @@
 use crate::core::{CommentedLang, DirStats, Lang, MatchData};
 use ratatui::widgets::TableState;
 use size::Size;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct MatchGroup {
@@ -129,7 +129,7 @@ impl TableData {
             None
         };
 
-        self.data.sort_by(|a, b| b.stats().size.partial_cmp(&a.stats().size).unwrap());
+        self.data.sort_by_key(MatchGroup::stats);
 
         if let Some(path) = path {
             if let Some(idx) = self.data.iter().position(|ele| ele.group_path == path) {
@@ -138,8 +138,8 @@ impl TableData {
         }
     }
 
-    pub fn get_by_path(&self, path: &PathBuf) -> Option<&MatchGroup> {
-        self.data.iter().find(|ele| ele.group_path == *path)
+    pub fn get_by_path(&self, path: &Path) -> Option<&MatchGroup> {
+        self.data.iter().find(|ele| ele.group_path == path)
     }
 
     pub fn get_match_by_idx_mut(&mut self, idx: usize) -> Option<&mut MatchDataUI> {
