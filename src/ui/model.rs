@@ -1,4 +1,4 @@
-use crate::core::{heuristic::Lang, DirStats, LangData, MatchData};
+use crate::core::{CommentedLang, DirStats, Lang, MatchData};
 use ratatui::widgets::TableState;
 use size::Size;
 use std::path::PathBuf;
@@ -12,32 +12,28 @@ pub struct MatchGroup {
 }
 
 impl MatchGroup {
-    pub fn add_langs(mut self, langs: Vec<LangData>) -> Self {
+    pub fn add_langs(mut self, langs: Vec<CommentedLang>) -> Self {
         for lang in langs {
             if let Some(lang_ui) = self.languages.iter_mut().find(|ele| ele.lang == lang.lang) {
-                if let Some(comment) = lang.comment() {
-                    lang_ui.comments.push(comment.to_owned())
-                }
+                lang_ui.comments.push(lang.comment)
             } else {
                 self.languages.push(LangDataUI {
-                    lang: lang.lang.clone(),
-                    comments: [lang.comment()].iter().flat_map(|ele| ele.map(|e| e.to_owned())).collect::<Vec<_>>(),
+                    lang: lang.lang,
+                    comments: vec![lang.comment],
                 })
             }
         }
         self
     }
 
-    pub fn add_langs_ref(&mut self, langs: &[LangData]) {
+    pub fn add_langs_ref(&mut self, langs: &[CommentedLang]) {
         for lang in langs {
             if let Some(lang_ui) = self.languages.iter_mut().find(|ele| ele.lang == lang.lang) {
-                if let Some(comment) = lang.comment() {
-                    lang_ui.comments.push(comment.to_owned())
-                }
+                lang_ui.comments.push(lang.comment.to_owned())
             } else {
                 self.languages.push(LangDataUI {
-                    lang: lang.lang.clone(),
-                    comments: [lang.comment()].iter().flat_map(|ele| ele.map(|e| e.to_owned())).collect::<Vec<_>>(),
+                    lang: lang.lang,
+                    comments: vec![lang.comment.to_owned()],
                 })
             }
         }
@@ -57,7 +53,7 @@ pub struct MatchDataUI {
 
 #[derive(Debug, Clone)]
 pub struct LangDataUI {
-    pub lang: Lang,
+    pub lang: &'static Lang,
     pub comments: Vec<String>,
 }
 

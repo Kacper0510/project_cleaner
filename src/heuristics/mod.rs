@@ -1,4 +1,4 @@
-use crate::core::{Heuristic, LangData, MatchingState};
+use crate::core::{Heuristic, Lang, MatchingState};
 
 mod rust;
 mod unity;
@@ -17,8 +17,9 @@ macro_rules! heuristic {
         pub const INSTANCE: $name = $name;
 
         impl Heuristic for $name {
-            fn info(&self) -> LangData {
-                LangData::new(stringify!($name), $icon, $short)
+            fn info(&self) -> &'static Lang {
+                const LANG: Lang = Lang::new(stringify!($name), $icon, $short);
+                &LANG
             }
 
             fn check_for_matches(&self, $state: &mut MatchingState) {

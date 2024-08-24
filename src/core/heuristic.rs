@@ -6,7 +6,7 @@ pub trait Heuristic {
     /// Returns information about the heuristic.
     ///
     /// This information is used to display the heuristic in the UI.
-    fn info(&self) -> LangData;
+    fn info(&self) -> &'static Lang;
     /// Find matches in a directory and adds results to the state.
     ///
     /// All actions in this method should be performed on the `state` parameter.
@@ -26,13 +26,7 @@ impl fmt::Display for dyn Heuristic {
 }
 
 /// Data structure representing a programming language or other reason for a match.
-#[derive(Debug, Clone)]
-pub struct LangData {
-    pub lang: Lang,
-    /// Comment for this instance of [`LangData`], present only when querying specific match information.
-    comment: Option<String>,
-}
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lang {
     /// Name of the language or heuristic.
     pub name: &'static str,
@@ -44,31 +38,40 @@ pub struct Lang {
     pub short: &'static str,
 }
 
-impl fmt::Display for LangData {
+impl fmt::Display for Lang {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.lang.name)?;
-        if let Some(comment) = &self.comment {
-            write!(f, " - {}", comment)
-        } else {
-            Ok(())
-        }
+        write!(f, "{}", self.name)
     }
 }
 
-impl LangData {
+impl Lang {
     /// Creates a new instance of [`LangData`] with the specified parameters.
     #[inline]
     pub const fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
         Self {
-            lang: Lang {
-                name,
-                icon,
-                short,
-            },
-            comment: None,
+            name,
+            icon,
+            short,
         }
     }
+}
 
+/// Extended [`Lang`] data structure with a comment field.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CommentedLang {
+    /// Language this struct is based on.
+    pub lang: &'static Lang,
+    /// Comment for this instance of [`LangData`], present only when querying specific match information.
+    pub comment: String,
+}
+
+impl fmt::Display for CommentedLang {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {}", self.lang.name, self.comment)
+    }
+}
+
+impl CommentedLang {
     /// Returns the name of the language or heuristic.
     #[inline]
     pub fn name(&self) -> &str {
@@ -87,21 +90,5 @@ impl LangData {
     #[inline]
     pub fn short(&self) -> &str {
         self.lang.short
-    }
-
-    /// Returns a comment for this instance of [`LangData`].
-    ///
-    /// `None` when querying general heuristic information.
-    /// `Some` when querying specific match information.
-    #[inline]
-    pub fn comment(&self) -> Option<&str> {
-        self.comment.as_deref()
-    }
-
-    /// Sets a comment for this instance of [`LangData`].
-    #[inline]
-    pub(super) fn with_comment(mut self, comment: &str) -> Self {
-        self.comment = Some(comment.to_owned());
-        self
     }
 }
