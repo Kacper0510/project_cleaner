@@ -5,7 +5,6 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone)]
 pub struct MatchGroup {
-    pub hidden: bool,
     pub group_path: PathBuf,
     pub status: MatchDataUIStatus,
     pub languages: Vec<LangDataUI>,
@@ -104,7 +103,6 @@ impl TableData {
         } else {
             self.data.push(
                 MatchGroup {
-                    hidden: data.hidden(),
                     group_path: path,
                     status: MatchDataUIStatus::Found,
                     languages: vec![],

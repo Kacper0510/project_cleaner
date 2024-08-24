@@ -23,10 +23,9 @@ impl Add for DirStats {
     type Output = DirStats;
 
     fn add(self, rhs: Self) -> Self::Output {
-        let size = if let Some(s) = rhs.size {
-            Some(if let Some(self_s) = self.size { self_s + s } else { s })
-        } else {
-            self.size
+        let size = match (self.size, rhs.size) {
+            (Some(a), Some(b)) => Some(a + b),
+            (a, b) => a.or(b),
         };
 
         let last_mod = [self.last_mod, rhs.last_mod].iter().flatten().max().copied();

@@ -80,8 +80,9 @@ impl App {
 
         while let Ok(data) = self.walker_channel.1.try_recv() {
             info!("UI got new match path: {:?}", data.path);
-
-            self.table.add_match(data);
+            if !data.hidden() || self.args.dangerous {
+                self.table.add_match(data);
+            }
         }
 
         let mut updated = false;

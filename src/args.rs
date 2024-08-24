@@ -17,5 +17,8 @@ pub struct Args {
     pub no_ui: bool,
     /// Do not ask for confirmation when deleting directories
     #[arg(short = 'y')]
-    pub delete_instantly: bool,    
+    pub delete_instantly: bool,
+    /// Show dangerous paths
+    #[arg(long)]
+    pub dangerous: bool,
 }
