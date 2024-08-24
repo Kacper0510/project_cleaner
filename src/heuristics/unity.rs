@@ -17,7 +17,7 @@ const DIRS: [&str; 14] = [
     "recordings",
 ];
 
-heuristic!(Unity, "󰚯", "unity", state, {
+heuristic!(Unity, "󰚯", "unity", 15, state, {
     if state.has_directory("Assets").is_some()
         && state.has_directory("Packages").is_some()
         && state.has_directory("ProjectSettings").is_some()

@@ -36,23 +36,13 @@ pub struct Lang {
     pub icon: &'static str,
     /// Short name/abbreviation of the language or heuristic, used when icons are not supported.
     pub short: &'static str,
+    /// [ANSI 8-bit color index](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for the language or heuristic.
+    pub color_index: u8,
 }
 
 impl fmt::Display for Lang {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
-    }
-}
-
-impl Lang {
-    /// Creates a new instance of [`LangData`] with the specified parameters.
-    #[inline]
-    pub const fn new(name: &'static str, icon: &'static str, short: &'static str) -> Self {
-        Self {
-            name,
-            icon,
-            short,
-        }
     }
 }
 

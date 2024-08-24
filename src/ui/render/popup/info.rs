@@ -31,11 +31,14 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
         .languages
         .iter()
         .flat_map(|ele| {
-            let mut res = vec![Line::from(vec![Span::from(if app.args.no_icons {
-                format!("- {}", ele.lang.name)
-            } else {
-                format!("- {} {}", ele.lang.icon, ele.lang.name)
-            })])];
+            let mut res = vec![Line::from(vec![Span::styled(
+                if app.args.no_icons {
+                    format!("- {}", ele.lang.name)
+                } else {
+                    format!("- {} {}", ele.lang.icon, ele.lang.name)
+                },
+                Color::Indexed(ele.lang.color_index),
+            )])];
             for comment in &ele.comments {
                 res.push(Line::from(vec![Span::styled(format!("  {}", comment), small_style)]))
             }
