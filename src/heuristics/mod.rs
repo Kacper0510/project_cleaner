@@ -1,4 +1,4 @@
-use crate::core::{ColorIndexed, Heuristic, Lang, MatchingState};
+use crate::core::{Heuristic, IconColor, Lang, MatchingState};
 
 mod rust;
 mod unity;
@@ -8,7 +8,7 @@ pub const ALL_HEURISTICS: [&dyn Heuristic; 2] = [&rust::INSTANCE, &unity::INSTAN
 
 #[macro_export]
 macro_rules! heuristic {
-    ($name:ident, $icon:literal, $short:literal, $color_normal:expr,$color_selected:expr, $state:ident, $expression:expr) => {
+    ($name:ident, $icon:literal, $short:literal, $color:expr, $state:ident, $expression:expr) => {
         use super::*;
 
         #[derive(Default)]
@@ -22,8 +22,7 @@ macro_rules! heuristic {
                     name: stringify!($name),
                     icon: $icon,
                     short: $short,
-                    color_normal: $color_normal,
-                    color_selected: $color_selected,
+                    color: $color,
                 };
                 &LANG
             }

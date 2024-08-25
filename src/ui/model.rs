@@ -95,6 +95,7 @@ impl TableData {
         self.idx += 1;
 
         if let Some(record) = self.data.iter_mut().find(|ele| ele.group_path == path) {
+            record.hidden |= data.hidden();
             record.add_langs_ref(data.languages());
             record.matches.push(ui_data);
         } else {

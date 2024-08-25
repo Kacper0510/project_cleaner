@@ -46,11 +46,7 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
                 .map(|e| {
                     Span::styled(
                         if no_icons { format!("{} ", e.lang.short) } else { e.lang.icon.to_owned() },
-                        Style::default().fg(if is_selected {
-                            e.lang.color_selected.into()
-                        } else {
-                            e.lang.color_normal.into()
-                        }),
+                        Style::default().fg(if is_selected { e.lang.color.selected() } else { e.lang.color.normal() }),
                     )
                 })
                 .collect();
