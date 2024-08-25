@@ -55,8 +55,18 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) -> Option<()> {
         area,
     );
 
-    let container = Paragraph::new(text);
-    frame.render_widget(container, layout[0]);
+    frame.render_widget(Paragraph::new(text), layout[0]);
+    if match_data.hidden {
+        frame.render_widget(
+            Paragraph::new(if app.args.no_icons {
+                Span::styled("(!)  ", Color::LightYellow)
+            } else {
+                Span::styled("    ", Color::LightYellow)
+            })
+            .alignment(layout::Alignment::Right),
+            layout[0],
+        );
+    }
 
     let widths = [Constraint::Percentage(100), Constraint::Length(10), Constraint::Length(10)];
     let table = Table::new(match_data_to_rows(match_data), widths)
