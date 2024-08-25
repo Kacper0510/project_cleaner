@@ -14,9 +14,12 @@ pub fn run(args: super::args::Args) {
     let collector = move || {
         let mut collected = vec![];
         while let Ok(data) = receiver.recv() {
-            println!("{}", data.path.display());
+            if !args.dangerous && data.hidden() {
+                continue;
+            }
+            println!("{}{}", if data.hidden() { "(Dangerous!) " } else { "" }, data.path.display());
             for language in data.languages() {
-                println!("-> {}", language);
+                println!("\t-> {}", language);
             }
             collected.push(data.path);
         }
@@ -39,7 +42,7 @@ pub fn run(args: super::args::Args) {
     }
 
     let confirmed = args.delete_instantly || {
-        let form = if results.len() == 1 { "directory" } else { "directories" };
+        let form = if results.len() == 1 { "path" } else { "paths" };
         println!("Do you want to permanently delete the {} {} listed above?", results.len(), form);
         print!("WARNING: this action is irreversible! [y/N] ");
         let _ = stdout().flush();
