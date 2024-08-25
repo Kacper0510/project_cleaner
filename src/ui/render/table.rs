@@ -12,12 +12,18 @@ use crate::ui::{
 };
 
 pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
-    let widths = [Constraint::Length(6), Constraint::Percentage(100), Constraint::Length(10), Constraint::Length(10)];
+    let widths = [
+        Constraint::Length(6),
+        Constraint::Percentage(100),
+        Constraint::Length(3),
+        Constraint::Length(8),
+        Constraint::Length(8),
+    ];
     let table_data = app.table.clone();
     let table = Table::new(table_data_to_rows(&table_data, app.args.no_icons), widths)
         .column_spacing(1)
         .header(
-            Row::new(vec!["", "Path", "LastMod", "Size"])
+            Row::new(vec!["", "Path", "", "LastMod", "Size"])
                 .style(Style::default().bg(Color::Cyan).add_modifier(Modifier::BOLD)),
         )
         .block(Block::bordered().border_type(BorderType::Rounded))
@@ -56,6 +62,15 @@ fn table_data_to_rows(data: &TableData, no_icons: bool) -> Vec<Row> {
             Row::new(vec![
                 Cell::new(Line::from(icons)),
                 Cell::new(Line::from(line)),
+                Cell::new(Line::from(if !ele.hidden {
+                    if no_icons {
+                        Span::styled("(!)", Color::LightYellow)
+                    } else {
+                        Span::styled("  ", Color::LightYellow)
+                    }
+                } else {
+                    Span::from("")
+                })),
                 Cell::new(if let Some(s) = &ele.stats().last_mod_days() {
                     format!("{}d", s)
                 } else {
