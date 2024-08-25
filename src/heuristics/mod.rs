@@ -2,10 +2,20 @@ use crate::core::{ColorIndexed, Heuristic, Lang, MatchingState};
 
 mod rust;
 mod unity;
+mod git;
 
 /// A list of all heuristics implemented by default in this crate.
-pub const ALL_HEURISTICS: [&dyn Heuristic; 2] = [&rust::INSTANCE, &unity::INSTANCE];
+pub const ALL_HEURISTICS: [&dyn Heuristic; 3] = [&rust::INSTANCE, &unity::INSTANCE, &git::INSTANCE];
 
+/// Simplified heuristic declaration.
+/// 
+/// Parameters in order:
+/// - `name` - heuristic name, also used as a generated struct indentifier,
+/// - `icon` - Nerd Font icon (see [`Lang::icon`]),
+/// - `short` - heuristic name abbreviation (see [`Lang::short`]),
+/// - `color` - [`ColorIndexed`] instance,
+/// - `state` - parameter name for [`Heuristic::check_for_matches()`],
+/// - `expression` - heuristic body with state in scope.
 #[macro_export]
 macro_rules! heuristic {
     ($name:ident, $icon:literal, $short:literal, $color:expr, $state:ident, $expression:expr) => {
