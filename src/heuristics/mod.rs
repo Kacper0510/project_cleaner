@@ -1,14 +1,15 @@
 use crate::core::{ColorIndexed, Heuristic, Lang, MatchingState};
 
+mod git;
+mod hidden;
 mod rust;
 mod unity;
-mod git;
 
 /// A list of all heuristics implemented by default in this crate.
-pub const ALL_HEURISTICS: [&dyn Heuristic; 3] = [&rust::INSTANCE, &unity::INSTANCE, &git::INSTANCE];
+pub const ALL_HEURISTICS: [&dyn Heuristic; 4] = [&hidden::INSTANCE, &rust::INSTANCE, &unity::INSTANCE, &git::INSTANCE];
 
 /// Simplified heuristic declaration.
-/// 
+///
 /// Parameters in order:
 /// - `name` - heuristic name, also used as a generated struct indentifier,
 /// - `icon` - Nerd Font icon (see [`Lang::icon`]),

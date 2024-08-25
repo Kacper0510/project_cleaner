@@ -30,7 +30,7 @@ impl<T> From<Match<T>> for GitMatchWeight {
     }
 }
 
-heuristic!(Git, "󰊢", "git", ColorIndexed(202), state, {
+heuristic!(Git, "", "git", ColorIndexed(202), state, {
     if let Some(gitignore) = state.has_file(".gitignore") {
         state.inherited_files().push(gitignore);
     }
