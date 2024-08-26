@@ -23,7 +23,7 @@ mod heuristic;
 pub use heuristic::{CommentedLang, Heuristic, Lang};
 
 mod color;
-pub use color::ColorIndexed;
+pub use color::IconColor;
 
 /// Type for storing files inherited from parent directories.
 /// See [`MatchingState::inherited_files()`].

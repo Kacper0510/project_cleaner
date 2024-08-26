@@ -1,4 +1,4 @@
-use crate::core::{ColorIndexed, Heuristic, Lang, MatchingState};
+use crate::core::{Heuristic, IconColor, Lang, MatchingState};
 
 mod git;
 mod hidden;

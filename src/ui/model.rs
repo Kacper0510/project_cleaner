@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct MatchGroup {
+    pub hidden: bool,
     pub group_path: PathBuf,
     pub status: MatchDataUIStatus,
     pub languages: Vec<LangDataUI>,
@@ -83,11 +84,13 @@ impl TableData {
         self.idx += 1;
 
         if let Some(record) = self.data.iter_mut().find(|ele| ele.group_path == path) {
+            record.hidden |= data.hidden();
             record.add_langs_ref(data.languages());
             record.matches.push(ui_data);
         } else {
             self.data.push(
                 MatchGroup {
+                    hidden: data.hidden(),
                     group_path: path,
                     status: MatchDataUIStatus::Found,
                     languages: vec![],

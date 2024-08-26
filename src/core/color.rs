@@ -1,9 +1,25 @@
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct ColorIndexed(pub u8);
+pub struct IconColor {
+    pub normal: u8,
+    pub selected: u8,
+}
+
+impl IconColor {
+    pub const fn new(normal: u8, selected: u8) -> Self {
+        IconColor {
+            normal,
+            selected,
+        }
+    }
+}
 
 #[cfg(feature = "cli")]
-impl From<ColorIndexed> for ratatui::style::Color {
-    fn from(val: ColorIndexed) -> Self {
-        ratatui::style::Color::Indexed(val.0)
+impl IconColor {
+    pub fn normal(self) -> ratatui::style::Color {
+        ratatui::style::Color::Indexed(self.normal)
+    }
+
+    pub fn selected(self) -> ratatui::style::Color {
+        ratatui::style::Color::Indexed(self.selected)
     }
 }

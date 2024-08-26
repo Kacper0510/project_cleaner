@@ -1,4 +1,4 @@
-use super::{color::ColorIndexed, MatchingState};
+use super::{color::IconColor, MatchingState};
 use std::fmt;
 
 /// Trait for implementing heuristics to match directories and files for deletion.
@@ -37,7 +37,7 @@ pub struct Lang {
     /// Short name/abbreviation of the language or heuristic, used when icons are not supported.
     pub short: &'static str,
     /// [ANSI 8-bit color index](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for the language or heuristic.
-    pub color: ColorIndexed,
+    pub color: IconColor,
 }
 
 impl fmt::Display for Lang {

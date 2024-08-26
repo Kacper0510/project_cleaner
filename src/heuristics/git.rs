@@ -30,7 +30,7 @@ impl<T> From<Match<T>> for GitMatchWeight {
     }
 }
 
-heuristic!(Git, "", "git", ColorIndexed(202), state, {
+heuristic!(Git, "", "git", IconColor::new(202, 166), state, {
     if state.has_directory(".git").is_some() {
         let group_scope = state.path().to_owned();
         let inherited = state.inherited_files();
