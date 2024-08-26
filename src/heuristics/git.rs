@@ -31,12 +31,21 @@ impl<T> From<Match<T>> for GitMatchWeight {
 }
 
 heuristic!(Git, "", "git", ColorIndexed(202), state, {
-    if let Some(gitignore) = state.has_file(".gitignore") {
-        state.inherited_files().push(gitignore);
+    if state.has_directory(".git").is_some() {
+        let group_scope = state.path().to_owned();
+        let inherited = state.inherited_files();
+        match inherited.len() {
+            0 => inherited.push(group_scope),
+            1.. => inherited[0] = group_scope,
+        }
+    } else if state.inherited_files().is_empty() {
+        return; // No .git folder found yet
     }
 
-    if state.inherited_files().is_empty() {
-        return;
+    if let Some(gitignore) = state.has_file(".gitignore") {
+        state.inherited_files().push(gitignore);
+    } else if state.inherited_files().len() < 2 {
+        return; // No .gitignores found yet
     }
 
     let matchers: Vec<_> = state.inherited_files().iter().rev().map(|ignore| Gitignore::new(ignore).0).collect();
@@ -50,7 +59,8 @@ heuristic!(Git, "", "git", ColorIndexed(202), state, {
             (path.file_name().unwrap().to_owned(), weight)
         })
         .collect();
+    let group = state.inherited_files()[0].clone();
     for (name, weight) in matches {
-        state.add_match(&name, weight.comment()).weight(weight as i32);
+        state.add_match(&name, weight.comment()).weight(weight as i32).custom_group(group.clone());
     }
 });

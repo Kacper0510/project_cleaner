@@ -63,7 +63,7 @@ pub enum MatchDataUIStatus {
     Selected,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TableData {
     pub idx: usize,
     pub state: TableState,
@@ -71,20 +71,9 @@ pub struct TableData {
     cleanable_space: Size,
 }
 
-impl Default for TableData {
-    fn default() -> Self {
-        Self {
-            idx: 0,
-            state: Default::default(),
-            data: Default::default(),
-            cleanable_space: Size::from_bytes(0),
-        }
-    }
-}
-
 impl TableData {
     pub fn add_match(&mut self, data: MatchData) {
-        let path = data.group.clone();
+        let path = data.group().to_owned();
 
         let ui_data = MatchDataUI {
             idx: self.idx,
