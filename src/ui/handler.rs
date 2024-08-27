@@ -28,6 +28,9 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
                 PopUpKind::Exit => app.force_quit(),
             },
 
+            KeyCode::Up if *kind == PopUpKind::Info => app.scroll_up(),
+            KeyCode::Down if *kind == PopUpKind::Info => app.scroll_down(),
+
             _ => {},
         },
         PopUpState::Closed => {
@@ -65,13 +68,20 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
 }
 
 pub fn handle_mouse_events(mouse_event: MouseEvent, app: &mut App) -> AppResult<()> {
-    if app.popup_state == PopUpState::Closed {
-        match mouse_event.kind {
+    match app.popup_state {
+        PopUpState::Closed => match mouse_event.kind {
             MouseEventKind::ScrollDown => app.list_down(),
             MouseEventKind::ScrollUp => app.list_up(),
 
             _ => {},
-        }
+        },
+        PopUpState::Open(PopUpKind::Info) => match mouse_event.kind {
+            MouseEventKind::ScrollDown => app.scroll_down(),
+            MouseEventKind::ScrollUp => app.scroll_up(),
+
+            _ => {},
+        },
+        _ => {},
     }
     Ok(())
 }

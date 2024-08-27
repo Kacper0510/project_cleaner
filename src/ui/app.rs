@@ -15,6 +15,7 @@ use std::{
 };
 use throbber_widgets_tui::ThrobberState;
 use tracing::info;
+use tui_widgets::scrollview::ScrollViewState;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -34,6 +35,7 @@ pub struct App {
 
     pub table: TableData,
     pub throbber_state: ThrobberState,
+    pub scroll_state: ScrollViewState,
 
     pub state: AppState,
     pub popup_state: PopUpState,
@@ -54,6 +56,7 @@ impl App {
             running: true,
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
+            scroll_state: ScrollViewState::new(),
             state: AppState::Scanning,
             popup_state: PopUpState::Closed,
             dir_stats_channel: std::sync::mpsc::channel(),
@@ -158,6 +161,14 @@ impl App {
                 e + 1
             }
         }));
+    }
+
+    pub fn scroll_up(&mut self) {
+        self.scroll_state.scroll_up()
+    }
+
+    pub fn scroll_down(&mut self) {
+        self.scroll_state.scroll_down()
     }
 
     pub fn reload(&mut self) {
