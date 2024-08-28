@@ -9,7 +9,7 @@ use ratatui::{
     widgets::{Block, BorderType, Padding, Paragraph, Row, Table},
     Frame,
 };
-use tui_widgets::scrollview::{ScrollView, ScrollViewState};
+use tui_scrollview::{ScrollView, ScrollViewState};
 
 use super::make_popup_layout;
 

@@ -15,7 +15,7 @@ use std::{
 };
 use throbber_widgets_tui::ThrobberState;
 use tracing::info;
-use tui_widgets::scrollview::ScrollViewState;
+use tui_scrollview::ScrollViewState;
 
 pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
 
