@@ -51,7 +51,7 @@ impl fmt::Display for Lang {
 pub struct CommentedLang {
     /// Language this struct is based on.
     pub lang: &'static Lang,
-    /// Comment for this instance of [`LangData`], present only when querying specific match information.
+    /// Additional comment.
     pub comment: String,
 }
 

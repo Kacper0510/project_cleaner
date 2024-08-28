@@ -18,7 +18,7 @@ pub struct Args {
     /// Do not ask for confirmation when deleting directories
     #[arg(short = 'y')]
     pub delete_instantly: bool,
-    /// Show dangerous paths
+    /// Show dangerous paths, e.g. hidden files and directories used by other apps
     #[arg(long)]
     pub dangerous: bool,
 }

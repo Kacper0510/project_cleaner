@@ -1,8 +1,9 @@
-use super::{Entry, Heuristic, InheritedFiles, MatchData, MatchParameters, CommentedLang};
+use super::{CommentedLang, Entry, Heuristic, InheritedFiles, MatchData, MatchParameters};
 use std::{
     any::Any,
     collections::HashMap,
     ffi::{OsStr, OsString},
+    fs::FileType,
     ops::DerefMut,
     path::{Path, PathBuf},
     sync::mpsc::Sender,
@@ -92,9 +93,11 @@ impl<'entries> MatchingState<'entries> {
         self.contents.get(OsStr::new(name)).filter(|v| v.0.file_type.is_dir()).map(|v| v.0.path())
     }
 
-    /// Returns an iterator over all files in the current directory.
-    pub fn get_all_directories(&self) -> impl Iterator<Item = PathBuf> + '_ {
-        self.contents.values().filter(move |v| v.0.file_type.is_dir()).map(move |v| v.0.path())
+    /// Returns an iterator over all files/subdirectories in the current directory.
+    ///
+    /// The second parameter in each entry contains information about the path type.
+    pub fn get_all_contents(&self) -> impl Iterator<Item = (PathBuf, FileType)> + '_ {
+        self.contents.values().map(|v| (v.0.path(), v.0.file_type))
     }
 
     /// Adds a match for the file or directory selected with the `name` parameter.
@@ -105,7 +108,8 @@ impl<'entries> MatchingState<'entries> {
     /// # Panics
     ///
     /// Panics if the specified file or directory does not exist in the current directory.
-    pub fn add_match(&mut self, name: &str, comment: &str) -> &mut MatchParameters {
+    pub fn add_match<S>(&mut self, name: &S, comment: &str) -> &mut MatchParameters
+    where S: AsRef<OsStr> + ?Sized + std::fmt::Debug {
         let new = MatchParameters::new(CommentedLang {
             lang: self.current_heuristic.unwrap().info(),
             comment: comment.to_owned(),
@@ -114,7 +118,7 @@ impl<'entries> MatchingState<'entries> {
             v.push(new);
             v.last_mut().unwrap()
         } else {
-            panic!("Heuristic \"{}\" tried to add invalid match: {}", self.current_heuristic.unwrap(), name)
+            panic!("Heuristic \"{}\" tried to add invalid match: {:#?}", self.current_heuristic.unwrap(), name)
         }
     }
 }
