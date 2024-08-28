@@ -26,7 +26,7 @@ heuristic!(Unity, "󰚯", "unity", IconColor::new(15, 234), state, {
             if state.has_directory(dir).is_some() {
                 state.add_match(
                     dir,
-                    &format!("Unity project: Found Assets, Packages, ProjectSettings and {dir} directory."),
+                    &format!("Found Assets, Packages, ProjectSettings and {dir} directory."),
                 );
             }
         }

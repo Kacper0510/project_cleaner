@@ -14,7 +14,7 @@ pub const ALL_HEURISTICS: [&dyn Heuristic; 4] = [&hidden::INSTANCE, &rust::INSTA
 /// - `name` - heuristic name, also used as a generated struct indentifier,
 /// - `icon` - Nerd Font icon (see [`Lang::icon`]),
 /// - `short` - heuristic name abbreviation (see [`Lang::short`]),
-/// - `color` - [`ColorIndexed`] instance,
+/// - `color` - [`IconColor`] instance,
 /// - `state` - parameter name for [`Heuristic::check_for_matches()`],
 /// - `expression` - heuristic body with state in scope.
 #[macro_export]

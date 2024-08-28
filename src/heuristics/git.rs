@@ -11,11 +11,11 @@ enum GitMatchWeight {
 }
 
 impl GitMatchWeight {
-    const fn comment(&self) -> &'static str {
+    fn comment(&self, file_name: &str) -> String {
         match self {
-            GitMatchWeight::NotMatched => "File was not included in any .gitignore files that were found.",
-            GitMatchWeight::Ignored => "File was included in one of .gitignore files.",
-            GitMatchWeight::Whitelisted => "File was explicitly whitelisted in one of .gitignore files.",
+            GitMatchWeight::NotMatched => format!("{file_name} was not included in any .gitignore files that were found."),
+            GitMatchWeight::Ignored => format!("{file_name} was included in one of .gitignore files."),
+            GitMatchWeight::Whitelisted => format!("{file_name} was explicitly whitelisted in one of .gitignore files."),
         }
     }
 }
@@ -61,6 +61,7 @@ heuristic!(Git, "", "git", IconColor::new(202, 166), state, {
         .collect();
     let group = state.inherited_files()[0].clone();
     for (name, weight) in matches {
-        state.add_match(&name, weight.comment()).weight(weight as i32).custom_group(group.clone());
+        let comment = weight.comment(&name.to_string_lossy());
+        state.add_match(&name, &comment).weight(weight as i32).custom_group(group.clone());
     }
 });
