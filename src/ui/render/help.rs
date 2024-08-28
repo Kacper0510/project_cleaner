@@ -8,7 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use crate::ui::{
     app::{App, AppState},
-    popup::PopUpState,
+    popup::{PopUpKind, PopUpState},
 };
 
 pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
@@ -34,9 +34,12 @@ pub fn render(app: &mut App, frame: &mut Frame, area: Rect) {
 fn construct_help(app: &App) -> Vec<String> {
     let mut res = vec![];
 
-    match app.popup_state {
-        PopUpState::Open(_) => {
+    match &app.popup_state {
+        PopUpState::Open(kind) => {
             res.push((10, "Close [q]"));
+            if *kind == PopUpKind::Info {
+                res.push((0, "Scroll [↑↓]"));
+            }
         },
         PopUpState::Closed => {
             res.push((0, "Scroll [↑↓]"));
