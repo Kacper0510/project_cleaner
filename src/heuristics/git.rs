@@ -5,7 +5,7 @@ enum GitMatchWeight {
     /// File was not matched, maybe the user wants to leave it as is?
     NotMatched = -1_000,
     /// File was ignored, so it probably can be removed.
-    Ignored = 500,
+    Ignored = 0, // TODO: Change after some kind of settings implementation
     /// File was explicitly whitelisted, we are not touching it.
     Whitelisted = -10_000,
 }
