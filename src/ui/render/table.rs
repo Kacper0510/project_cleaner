@@ -36,21 +36,19 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
         .iter()
         .enumerate()
         .map(|(idx, ele)| {
-            let is_selected = selected.and_then(|s| if s == idx { Some(()) } else { None }).is_some();
-            let fg = if is_selected { Color::Black } else { Color::White };
-            let bg = if is_selected { Color::White } else { Color::Reset };
-
             let icons: Vec<_> = ele
                 .languages
                 .iter()
                 .map(|e| {
                     Span::styled(
                         format!("{} ", if no_icons { e.lang.short } else { e.lang.icon }),
-                        Style::default().fg(if is_selected { e.lang.color.selected() } else { e.lang.color.normal() }),
+                        Color::from(e.lang.color),
                     )
                 })
                 .collect();
 
+            let is_selected = selected.and_then(|s| if s == idx { Some(()) } else { None }).is_some();
+            let fg = if is_selected { Color::Black } else { Color::White };
             let line = match ele.status {
                 MatchDataUIStatus::Selected => {
                     vec![
@@ -62,29 +60,25 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
                 MatchDataUIStatus::Found => vec![Span::styled(ele.group_path.display().to_string(), fg)],
             };
 
-            let warn_color = if is_selected { Color::Yellow } else { Color::LightYellow };
             Row::new(vec![
                 Cell::new(Line::from(icons)),
-                Cell::new(Line::from(line)),
+                Cell::new(Line::from(line)).bg(if is_selected { Color::White } else { Color::Reset }),
                 Cell::new(Line::from(if ele.hidden {
-                    if no_icons {
-                        Span::styled("(!)", warn_color)
-                    } else {
-                        Span::styled("  ", warn_color)
-                    }
+                    Span::styled(if no_icons { "(!)" } else { "  " }, Color::LightYellow)
                 } else {
                     Span::from("")
                 })),
-                Cell::new(Span::styled(
-                    if let Some(s) = &ele.stats().last_mod_days() { format!("{}d", s) } else { "---".to_owned() },
-                    fg,
-                )),
-                Cell::new(Span::styled(
-                    if let Some(s) = &ele.stats().size { format!("{}", s) } else { "---".to_owned() },
-                    fg,
-                )),
+                Cell::new(Span::from(if let Some(s) = &ele.stats().last_mod_days() {
+                    format!("{}d", s)
+                } else {
+                    "---".to_owned()
+                })),
+                Cell::new(Span::from(if let Some(s) = &ele.stats().size {
+                    format!("{}", s)
+                } else {
+                    "---".to_owned()
+                })),
             ])
-            .bg(bg)
         })
         .collect()
 }

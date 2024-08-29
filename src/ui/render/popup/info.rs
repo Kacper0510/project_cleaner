@@ -85,7 +85,7 @@ impl StatefulWidget for InfoPopup {
                     } else {
                         format!("- {} {}", ele.lang.icon, ele.lang.name)
                     },
-                    Style::default().fg(ele.lang.color.normal()),
+                    Style::default().fg(ele.lang.color.into()),
                 )])];
                 for comment in &ele.comments {
                     res.push(Line::from(vec![Span::styled(format!("  {}", comment), small_style)]));

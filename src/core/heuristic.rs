@@ -36,7 +36,7 @@ pub struct Lang {
     pub icon: &'static str,
     /// Short name/abbreviation of the language or heuristic, used when icons are not supported.
     pub short: &'static str,
-    /// [ANSI 8-bit color index](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for the language or heuristic.
+    /// [ANSI 8-bit color](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for the language or heuristic.
     pub color: IconColor,
 }
 
