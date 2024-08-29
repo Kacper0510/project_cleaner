@@ -2,11 +2,14 @@ use crate::core::{Heuristic, IconColor, Lang, MatchingState};
 
 mod git;
 mod hidden;
+mod js;
+mod python;
 mod rust;
 mod unity;
 
 /// A list of all heuristics implemented by default in this crate.
-pub const ALL_HEURISTICS: [&dyn Heuristic; 4] = [&hidden::INSTANCE, &rust::INSTANCE, &unity::INSTANCE, &git::INSTANCE];
+pub const ALL_HEURISTICS: [&dyn Heuristic; 6] =
+    [&hidden::INSTANCE, &rust::INSTANCE, &unity::INSTANCE, &js::INSTANCE, &python::INSTANCE, &git::INSTANCE];
 
 /// Simplified heuristic declaration.
 ///
@@ -25,6 +28,7 @@ macro_rules! heuristic {
         #[derive(Default)]
         pub struct $name;
 
+        #[allow(dead_code)]
         pub const INSTANCE: $name = $name;
 
         impl Heuristic for $name {
