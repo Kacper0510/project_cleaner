@@ -77,7 +77,7 @@ where F: FnMut(Result<PathBuf>) {
                 children.iter_mut().map(Result::as_mut).filter_map(|v| v.ok()).collect();
             let mut state = MatchingState::new(&mut filtered_children, &mut read_dir_state.inherited_files, path);
             for heuristic in super::ALL_HEURISTICS {
-                state.current_heuristic = Some(heuristic);
+                state.current_heuristic = Some(*heuristic);
                 heuristic.check_for_matches(&mut state);
             }
             state.process_collected_data(read_dir_state.sender.as_ref().unwrap());
