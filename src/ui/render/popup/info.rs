@@ -4,9 +4,9 @@ use crate::ui::{app::App, model::MatchGroup};
 use ratatui::{
     layout::{self, Constraint, Layout, Rect, Size},
     prelude::StatefulWidget,
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, BorderType, Padding, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Padding, Paragraph},
     Frame,
 };
 use tui_scrollview::{ScrollView, ScrollViewState};
@@ -46,20 +46,6 @@ impl InfoPopup {
             no_icons,
         }
     }
-
-    fn match_data_to_rows(&self) -> Vec<Row<'static>> {
-        self.match_data
-            .matches
-            .iter()
-            .map(|ele| {
-                Row::new(vec![
-                    ele.path.display().to_string(),
-                    if let Some(s) = &ele.dir_stats.last_mod_days() { format!("{}d", s) } else { "---".to_owned() },
-                    if let Some(s) = &ele.dir_stats.size { format!("{}", s) } else { "---".to_owned() },
-                ])
-            })
-            .collect::<Vec<_>>()
-    }
 }
 
 impl StatefulWidget for InfoPopup {
@@ -72,37 +58,53 @@ impl StatefulWidget for InfoPopup {
         let mut text = vec![
             Line::from(vec![Span::styled(self.path.to_str().unwrap(), Style::default().bold().fg(Color::Cyan))]),
             Line::from(vec![]),
-            Line::from(vec![Span::styled("Languages: ", Style::default().bold())]),
         ];
         let mut other: Vec<Line> = self
             .match_data
-            .languages
+            .matches
             .iter()
-            .flat_map(|ele| {
-                let mut res = vec![Line::from(vec![Span::styled(
-                    if self.no_icons {
-                        format!("- {}", ele.lang.name)
-                    } else {
-                        format!("- {} {}", ele.lang.icon, ele.lang.name)
-                    },
-                    Style::default().fg(ele.lang.color.normal()),
-                )])];
-                for comment in &ele.comments {
-                    res.push(Line::from(vec![Span::styled(format!("  {}", comment), small_style)]));
+            .flat_map(|match_ui| {
+                let mut res = vec![
+                    Line::from(vec![Span::styled(format!("- {}", match_ui.path.display()), Style::default().bold())]),
+                    Line::from(vec![
+                        Span::from("    Size: "),
+                        Span::styled(
+                            if let Some(s) = &match_ui.dir_stats.size { format!("{}", s) } else { "---".to_owned() },
+                            small_style,
+                        ),
+                        Span::from("  Last_mod: "),
+                        Span::styled(
+                            if let Some(s) = &match_ui.dir_stats.last_mod_days() {
+                                format!("{}d", s)
+                            } else {
+                                "---".to_owned()
+                            },
+                            small_style,
+                        ),
+                    ]),
+                ];
+
+                for lang in &match_ui.lang {
+                    res.push(Line::from(vec![Span::styled(
+                        if self.no_icons {
+                            format!("    - {}", lang.name())
+                        } else {
+                            format!("    - {} {}", lang.icon(), lang.name())
+                        },
+                        Style::default().fg(lang.lang.color.normal()),
+                    )]));
+                    res.push(Line::from(vec![Span::styled(format!("      {}", lang.comment), small_style)]));
                 }
+                res.push(Line::from(vec![]));
                 res
             })
             .collect();
         text.append(&mut other);
 
-        let table_rows = self.match_data_to_rows();
-
         let text_h: u16 = (text.len() + 1).try_into().unwrap();
-        let table_h: u16 = (table_rows.len() + 1).try_into().unwrap();
         let wight = if area.width > 0 { area.width - 1 } else { 0 };
         let text_area = Rect::new(0, 0, wight, text_h);
-        let table_area = Rect::new(0, text_h, wight, table_h);
-        let mut scrollview = ScrollView::new(Size::new(wight, text_h + table_h));
+        let mut scrollview = ScrollView::new(Size::new(wight, text_h));
 
         scrollview.render_widget(Paragraph::new(text), text_area);
         if self.match_data.hidden {
@@ -117,11 +119,6 @@ impl StatefulWidget for InfoPopup {
             );
         }
 
-        let widths = [Constraint::Percentage(100), Constraint::Length(10), Constraint::Length(10)];
-        let table = Table::new(table_rows, widths)
-            .column_spacing(1)
-            .header(Row::new(vec!["Path", "LastMod", "Size"]).style(Style::default().add_modifier(Modifier::BOLD)));
-        scrollview.render_widget(table, table_area);
         scrollview.render(area, buf, state);
     }
 }

@@ -26,7 +26,7 @@ impl fmt::Display for dyn Heuristic {
 }
 
 /// Data structure representing a programming language or other reason for a match.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lang {
     /// Name of the language or heuristic.
     pub name: &'static str,

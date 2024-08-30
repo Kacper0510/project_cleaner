@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -41,12 +43,16 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
             let bg = if is_selected { Color::White } else { Color::Reset };
 
             let icons: Vec<_> = ele
-                .languages
+                .matches
+                .iter()
+                .flat_map(|e| &e.lang)
+                .map(|e| e.lang)
+                .collect::<HashSet<_>>()
                 .iter()
                 .map(|e| {
                     Span::styled(
-                        if no_icons { format!("{} ", e.lang.short) } else { e.lang.icon.to_owned() },
-                        Style::default().fg(if is_selected { e.lang.color.selected() } else { e.lang.color.normal() }),
+                        if no_icons { format!("{} ", e) } else { e.icon.to_owned() },
+                        Style::default().fg(if is_selected { e.color.selected() } else { e.color.normal() }),
                     )
                 })
                 .collect();
