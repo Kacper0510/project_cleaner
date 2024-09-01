@@ -1,5 +1,5 @@
 pub mod core;
-pub use core::walk_directories;
+pub use core::Scanner;
 
 mod heuristics;
 pub use heuristics::ALL_HEURISTICS;

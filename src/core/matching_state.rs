@@ -1,4 +1,4 @@
-use super::{CommentedLang, Entry, Heuristic, InheritedFiles, MatchData, MatchParameters};
+use super::{CommentedLang, scanner, Heuristic, InheritedFiles, MatchData, MatchParameters};
 use std::{
     any::Any,
     collections::HashMap,
@@ -14,7 +14,7 @@ use std::{
 /// Only this type should be used to interact with the filesystem and return meaningful heuristic result to the user.
 pub struct MatchingState<'entries> {
     /// Optimized storage for current directory contents.
-    contents: HashMap<OsString, (&'entries mut Entry, Vec<MatchParameters>)>,
+    contents: HashMap<OsString, (&'entries mut scanner::Entry, Vec<MatchParameters>)>,
     /// Path of the current directory.
     parent_path: &'entries Path,
     /// Current heuristic being processed.
@@ -26,7 +26,7 @@ pub struct MatchingState<'entries> {
 impl<'entries> MatchingState<'entries> {
     /// Creates a new matching state for the specified directory, its entries and inherited files.
     pub(super) fn new(
-        children: &'entries mut [&mut Entry],
+        children: &'entries mut [&mut scanner::Entry],
         files: &'entries mut InheritedFiles,
         path: &'entries Path,
     ) -> Self {

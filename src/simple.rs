@@ -1,9 +1,8 @@
+use crate::{core::MatchData, Scanner};
 use std::{
     env::current_dir,
     io::{stdin, stdout, Write},
 };
-
-use crate::core::MatchData;
 
 pub fn run(args: super::args::Args) {
     let directory = args.path.unwrap_or_else(|| {
@@ -28,7 +27,7 @@ pub fn run(args: super::args::Args) {
     let handle = std::thread::spawn(collector);
 
     println!("Searching for files and directories to delete...");
-    crate::walk_directories(&directory, sender, |progress| {
+    Scanner::new(&directory, sender).scan_with_progress().for_each(|progress| {
         if let Err(error) = progress {
             if let Some(path) = error.path() {
                 println!("Failed to read {} ({})", path.display(), error);
