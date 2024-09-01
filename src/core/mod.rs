@@ -20,7 +20,10 @@ mod matching_state;
 pub use matching_state::MatchingState;
 
 mod heuristic;
-pub use heuristic::{CommentedLang, Heuristic, Lang};
+pub use heuristic::Heuristic;
+
+mod lang;
+pub use lang::{CommentedLang, Lang};
 
 mod color;
 pub use color::IconColor;
