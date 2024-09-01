@@ -26,7 +26,7 @@ impl fmt::Display for dyn Heuristic {
 }
 
 /// Data structure representing a programming language or other reason for a match.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lang {
     /// Name of the language or heuristic.
     pub name: &'static str,
@@ -38,6 +38,18 @@ pub struct Lang {
     pub short: &'static str,
     /// [ANSI 8-bit color index](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit) for the language or heuristic.
     pub color: IconColor,
+}
+
+impl PartialOrd for Lang {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Lang {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(other.name)
+    }
 }
 
 impl fmt::Display for Lang {

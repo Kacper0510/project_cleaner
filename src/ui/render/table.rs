@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use ratatui::{
     layout::{Constraint, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -37,30 +39,35 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
         .enumerate()
         .map(|(idx, ele)| {
             let is_selected = selected.and_then(|s| if s == idx { Some(()) } else { None }).is_some();
-            let fg = if is_selected { Color::Black } else { Color::White };
+            let fg: Color = if is_selected { Color::Black } else { Color::White };
             let bg = if is_selected { Color::White } else { Color::Reset };
 
-            let icons: Vec<_> = ele
-                .languages
+            let icons: HashSet<_> = ele.matches.iter().flat_map(|e| &e.lang).map(|e| e.lang).collect();
+            let mut icons: Vec<&&crate::core::Lang> = icons.iter().collect();
+            icons.sort();
+
+            let icons: Vec<_> = icons
                 .iter()
                 .map(|e| {
                     Span::styled(
-                        if no_icons { format!("{} ", e.lang.short) } else { e.lang.icon.to_owned() },
-                        Style::default().fg(if is_selected { e.lang.color.selected() } else { e.lang.color.normal() }),
+                        if no_icons { format!("{} ", e) } else { e.icon.to_owned() },
+                        Style::default().fg(if is_selected { e.color.selected() } else { e.color.normal() }),
                     )
                 })
                 .collect();
 
-            let line = match ele.status {
+            let mut line = match ele.status {
                 MatchDataUIStatus::Selected => {
-                    vec![
-                        Span::styled("[del]", Style::default().fg(Color::Red)),
-                        Span::from(" "),
-                        Span::styled(ele.group_path.display().to_string(), fg),
-                    ]
+                    vec![Span::styled("[del]", Style::default().fg(Color::Red)), Span::from(" ")]
                 },
-                MatchDataUIStatus::Found => vec![Span::styled(ele.group_path.display().to_string(), fg)],
+                MatchDataUIStatus::Found => vec![],
             };
+            if ele.matches.len() == 1 {
+                line.push(Span::styled(ele.matches[0].path.display().to_string(), fg));
+            } else {
+                line.push(Span::styled(ele.group_path.display().to_string(), fg));
+                line.push(Span::styled(" {...}", Color::DarkGray));
+            }
 
             let warn_color = if is_selected { Color::Yellow } else { Color::LightYellow };
             Row::new(vec![
