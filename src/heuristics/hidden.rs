@@ -8,6 +8,6 @@ heuristic!(Hidden, "󰘓", ".", IconColor(7), state, {
         .filter(|name| name.to_str().is_some_and(|s| s.starts_with('.')))
         .collect();
     for path in to_hide {
-        state.add_match(&path, &format!("{} starts with a dot.", path.to_string_lossy())).weight(0).hidden();
+        state.add_match(&path, &format!("{} starts with a dot.", path.to_string_lossy())).weight(-1000);
     }
 });

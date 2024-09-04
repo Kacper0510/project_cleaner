@@ -5,7 +5,7 @@ use super::{
 use crate::{
     args::Args,
     core::{dir_rm_parallel, dir_stats_parallel, DirStats, MatchData},
-    walk_directories,
+    Scanner,
 };
 use std::{
     env, error,
@@ -32,6 +32,7 @@ type Channel<T> = (Sender<T>, Receiver<T>);
 pub struct App {
     pub args: Args,
     pub running: bool,
+    pub scanner: Scanner,
 
     pub table: TableData,
     pub throbber_state: ThrobberState,
@@ -41,7 +42,7 @@ pub struct App {
     pub popup_state: PopUpState,
 
     pub dir_stats_channel: Channel<(usize, DirStats)>,
-    pub walker_channel: Channel<MatchData>,
+    pub scanner_receiver: Receiver<MatchData>,
     pub handle: Vec<JoinHandle<()>>,
     pub del_handle: Vec<JoinHandle<()>>,
 
@@ -51,16 +52,21 @@ pub struct App {
 impl App {
     /// Constructs a new instance of [`App`].
     pub fn new(args: Args) -> Self {
+        let root_path = args.path.clone().unwrap_or(env::current_dir().unwrap());
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let mut scanner = Scanner::new(&root_path, sender);
+        scanner.dangerous = args.dangerous;
         Self {
             args,
             running: true,
+            scanner,
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
             scroll_state: ScrollViewState::new(),
             state: AppState::Scanning,
             popup_state: PopUpState::Closed,
             dir_stats_channel: std::sync::mpsc::channel(),
-            walker_channel: std::sync::mpsc::channel(),
+            scanner_receiver: receiver,
             handle: vec![],
             del_handle: vec![],
             info_path: None,
@@ -70,10 +76,9 @@ impl App {
     pub fn run(&mut self) {
         self.state = AppState::Scanning;
         self.handle = vec![];
-        let path = self.args.path.clone().unwrap_or(env::current_dir().unwrap());
 
-        let tx = self.walker_channel.0.clone();
-        let handle = std::thread::spawn(move || walk_directories(&path, tx, |_path| {}));
+        let scanner = self.scanner.clone();
+        let handle = std::thread::spawn(|| scanner.scan());
         self.handle.push(handle);
     }
 
@@ -81,11 +86,9 @@ impl App {
     pub fn tick(&mut self) {
         self.throbber_state.calc_next();
 
-        while let Ok(data) = self.walker_channel.1.try_recv() {
+        while let Ok(data) = self.scanner_receiver.try_recv() {
             info!("UI got new match path: {:?}", data.path);
-            if !data.hidden() || self.args.dangerous {
-                self.table.add_match(data);
-            }
+            self.table.add_match(data);
         }
 
         let mut updated = false;

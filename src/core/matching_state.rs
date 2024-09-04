@@ -1,4 +1,7 @@
-use super::{CommentedLang, Entry, Heuristic, InheritedFiles, MatchData, MatchParameters};
+use super::{
+    scanner::{self, ScannerCache},
+    CommentedLang, Heuristic, MatchData, MatchParameters,
+};
 use std::{
     any::Any,
     collections::HashMap,
@@ -6,7 +9,6 @@ use std::{
     fs::FileType,
     ops::DerefMut,
     path::{Path, PathBuf},
-    sync::mpsc::Sender,
 };
 
 /// State passed to heuristics to manipulate matches and query current directory contents.
@@ -14,26 +16,26 @@ use std::{
 /// Only this type should be used to interact with the filesystem and return meaningful heuristic result to the user.
 pub struct MatchingState<'entries> {
     /// Optimized storage for current directory contents.
-    contents: HashMap<OsString, (&'entries mut Entry, Vec<MatchParameters>)>,
+    contents: HashMap<OsString, (&'entries mut scanner::Entry, Vec<MatchParameters>)>,
     /// Path of the current directory.
     parent_path: &'entries Path,
     /// Current heuristic being processed.
     pub(super) current_heuristic: Option<&'static dyn Heuristic>,
-    /// Files inherited from parent directories, hashed by heuristic type.
-    inherited_files: &'entries mut InheritedFiles,
+    /// [`ScannerCache`] associated with the current path.
+    cache: &'entries mut ScannerCache,
 }
 
 impl<'entries> MatchingState<'entries> {
-    /// Creates a new matching state for the specified directory, its entries and inherited files.
+    /// Creates a new matching state for the specified directory, its entries and scanner cache.
     pub(super) fn new(
-        children: &'entries mut [&mut Entry],
-        files: &'entries mut InheritedFiles,
+        children: &'entries mut [&mut scanner::Entry],
+        cache: &'entries mut ScannerCache,
         path: &'entries Path,
     ) -> Self {
         Self {
             contents: children.iter_mut().map(|v| (v.file_name.clone(), (v.deref_mut(), vec![]))).collect(),
             current_heuristic: None,
-            inherited_files: files,
+            cache,
             parent_path: path,
         }
     }
@@ -45,19 +47,28 @@ impl<'entries> MatchingState<'entries> {
     /// # Panics
     ///
     /// Panics if the channel is closed, which should not happen in normal operation.
-    pub(super) fn process_collected_data(&mut self, sender: &Sender<MatchData>) {
-        for (_, (entry, params)) in self.contents.drain() {
+    pub(super) fn process_collected_data(&mut self, include_dangerous: bool) {
+        for (entry_name, (entry, params)) in self.contents.drain() {
             let accumulated_params: MatchParameters = params.into_iter().sum();
-            if accumulated_params.weight <= 0 {
-                continue;
+            match (accumulated_params.weight, include_dangerous) {
+                (..=-1, true) => {
+                    if !self.cache.dangerous {
+                        self.cache.marked_to_be_dangerous.insert(entry_name);
+                    }
+                },
+                (..=-1, false) => entry.read_children_path = None,
+                (0, _) => (),
+                (1.., _) => {
+                    entry.read_children_path = None;
+                    let data = MatchData {
+                        path: entry.path(),
+                        group: self.parent_path.to_owned(),
+                        params: accumulated_params,
+                        dangerous: self.cache.dangerous,
+                    };
+                    self.cache.sender.as_ref().unwrap().send(data).expect("Sender error (did UI panic?)");
+                },
             }
-            entry.read_children_path = None;
-            let data = MatchData {
-                path: entry.path(),
-                group: self.parent_path.to_owned(),
-                params: accumulated_params,
-            };
-            sender.send(data).expect("Sender error (did UI panic?)");
         }
     }
 
@@ -75,7 +86,7 @@ impl<'entries> MatchingState<'entries> {
     /// It is used to check for matches in files that are not in the current directory
     /// and/or store additional data for future calls.
     pub fn inherited_files(&mut self) -> &mut Vec<PathBuf> {
-        self.inherited_files.entry(self.current_heuristic.type_id()).or_default()
+        self.cache.inherited_files.entry(self.current_heuristic.type_id()).or_default()
     }
 
     /// Returns the path of the specified file in the current directory if it exists and is accesible.

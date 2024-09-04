@@ -13,9 +13,13 @@ enum GitMatchWeight {
 impl GitMatchWeight {
     fn comment(&self, file_name: &str) -> String {
         match self {
-            GitMatchWeight::NotMatched => format!("{file_name} was not included in any .gitignore files that were found."),
+            GitMatchWeight::NotMatched => {
+                format!("{file_name} was not included in any .gitignore files that were found.")
+            },
             GitMatchWeight::Ignored => format!("{file_name} was included in one of .gitignore files."),
-            GitMatchWeight::Whitelisted => format!("{file_name} was explicitly whitelisted in one of .gitignore files."),
+            GitMatchWeight::Whitelisted => {
+                format!("{file_name} was explicitly whitelisted in one of .gitignore files.")
+            },
         }
     }
 }

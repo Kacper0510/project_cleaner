@@ -1,45 +1,17 @@
-use crate::core::{CommentedLang, DirStats, Lang, MatchData};
+use crate::core::{CommentedLang, DirStats, MatchData};
 use ratatui::widgets::TableState;
 use size::Size;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct MatchGroup {
-    pub hidden: bool,
+    pub dangerous: bool,
     pub group_path: PathBuf,
     pub status: MatchDataUIStatus,
-    pub languages: Vec<LangDataUI>,
     pub matches: Vec<MatchDataUI>,
 }
 
 impl MatchGroup {
-    pub fn add_langs(mut self, langs: Vec<CommentedLang>) -> Self {
-        for lang in langs {
-            if let Some(lang_ui) = self.languages.iter_mut().find(|ele| ele.lang == lang.lang) {
-                lang_ui.comments.push(lang.comment)
-            } else {
-                self.languages.push(LangDataUI {
-                    lang: lang.lang,
-                    comments: vec![lang.comment],
-                })
-            }
-        }
-        self
-    }
-
-    pub fn add_langs_ref(&mut self, langs: &[CommentedLang]) {
-        for lang in langs {
-            if let Some(lang_ui) = self.languages.iter_mut().find(|ele| ele.lang == lang.lang) {
-                lang_ui.comments.push(lang.comment.to_owned())
-            } else {
-                self.languages.push(LangDataUI {
-                    lang: lang.lang,
-                    comments: vec![lang.comment.to_owned()],
-                })
-            }
-        }
-    }
-
     pub fn stats(&self) -> DirStats {
         self.matches.iter().map(|ele| ele.dir_stats).sum()
     }
@@ -50,12 +22,7 @@ pub struct MatchDataUI {
     pub idx: usize,
     pub path: PathBuf,
     pub dir_stats: DirStats,
-}
-
-#[derive(Debug, Clone)]
-pub struct LangDataUI {
-    pub lang: &'static Lang,
-    pub comments: Vec<String>,
+    pub lang: Vec<CommentedLang>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -80,24 +47,20 @@ impl TableData {
             idx: self.idx,
             path: data.path.clone(),
             dir_stats: DirStats::default(),
+            lang: data.languages().to_vec(),
         };
         self.idx += 1;
 
         if let Some(record) = self.data.iter_mut().find(|ele| ele.group_path == path) {
-            record.hidden |= data.hidden();
-            record.add_langs_ref(data.languages());
+            record.dangerous |= data.dangerous;
             record.matches.push(ui_data);
         } else {
-            self.data.push(
-                MatchGroup {
-                    hidden: data.hidden(),
-                    group_path: path,
-                    status: MatchDataUIStatus::Found,
-                    languages: vec![],
-                    matches: vec![ui_data],
-                }
-                .add_langs(data.languages().to_vec()),
-            );
+            self.data.push(MatchGroup {
+                dangerous: data.dangerous,
+                group_path: path,
+                status: MatchDataUIStatus::Found,
+                matches: vec![ui_data],
+            });
             self.sort();
         }
     }
