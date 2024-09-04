@@ -73,7 +73,7 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
             Row::new(vec![
                 Cell::new(Line::from(icons)),
                 Cell::new(Line::from(line)),
-                Cell::new(Line::from(if ele.hidden {
+                Cell::new(Line::from(if ele.dangerous {
                     if no_icons {
                         Span::styled("(!)", warn_color)
                     } else {

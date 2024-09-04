@@ -107,7 +107,7 @@ impl StatefulWidget for InfoPopup {
         let mut scrollview = ScrollView::new(Size::new(wight, text_h));
 
         scrollview.render_widget(Paragraph::new(text), text_area);
-        if self.match_data.hidden {
+        if self.match_data.dangerous {
             scrollview.render_widget(
                 Paragraph::new(if self.no_icons {
                     Span::styled("(!)  ", Color::LightYellow)

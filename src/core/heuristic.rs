@@ -2,7 +2,7 @@ use super::{Lang, MatchingState};
 use std::fmt;
 
 /// Trait for implementing heuristics to match directories and files for deletion.
-pub trait Heuristic: Send + Sync{
+pub trait Heuristic: Sync {
     /// Returns information about the heuristic.
     ///
     /// This information is used to display the heuristic in the UI.

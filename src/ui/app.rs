@@ -54,10 +54,12 @@ impl App {
     pub fn new(args: Args) -> Self {
         let root_path = args.path.clone().unwrap_or(env::current_dir().unwrap());
         let (sender, receiver) = std::sync::mpsc::channel();
+        let mut scanner = Scanner::new(&root_path, sender);
+        scanner.dangerous = args.dangerous;
         Self {
             args,
             running: true,
-            scanner: Scanner::new(&root_path, sender),
+            scanner,
             table: TableData::default(),
             throbber_state: ThrobberState::default(),
             scroll_state: ScrollViewState::new(),
@@ -86,9 +88,7 @@ impl App {
 
         while let Ok(data) = self.scanner_receiver.try_recv() {
             info!("UI got new match path: {:?}", data.path);
-            if !data.hidden() || self.args.dangerous {
-                self.table.add_match(data);
-            }
+            self.table.add_match(data);
         }
 
         let mut updated = false;
