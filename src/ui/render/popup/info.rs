@@ -91,7 +91,7 @@ impl StatefulWidget for InfoPopup {
                         } else {
                             format!("    - {} {}", lang.icon(), lang.name())
                         },
-                        Style::default().fg(lang.lang.color.normal()),
+                        Style::default().fg(lang.lang.color.into()),
                     )]));
                     res.push(Line::from(vec![Span::styled(format!("      {}", lang.comment), small_style)]));
                 }

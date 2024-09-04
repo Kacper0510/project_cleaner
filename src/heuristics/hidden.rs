@@ -1,7 +1,7 @@
 use crate::heuristic;
 use std::ffi::OsStr;
 
-heuristic!(Hidden, "󰘓", ".", IconColor::new(7, 8), state, {
+heuristic!(Hidden, "󰘓", ".", IconColor(7), state, {
     let to_hide: Vec<_> = state
         .get_all_contents()
         .filter_map(|v| v.0.file_name().map(OsStr::to_owned))

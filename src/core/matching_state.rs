@@ -10,6 +10,7 @@ use std::{
     ops::DerefMut,
     path::{Path, PathBuf},
 };
+use tracing::{debug, info, warn};
 
 /// State passed to heuristics to manipulate matches and query current directory contents.
 ///
@@ -51,14 +52,20 @@ impl<'entries> MatchingState<'entries> {
         for (entry_name, (entry, params)) in self.contents.drain() {
             let accumulated_params: MatchParameters = params.into_iter().sum();
             match (accumulated_params.weight, include_dangerous) {
-                (..=-1, true) => {
-                    if !self.cache.dangerous {
+                (nw @ ..=-1, true) => {
+                    if self.cache.dangerous {
+                        warn!("{:#?} is already dangerous!", entry_name);
+                    } else if entry.file_type.is_dir() {
+                        info!("Negative weight of {} - marked as dangerous: {:#?}", nw, entry_name);
                         self.cache.marked_to_be_dangerous.insert(entry_name);
                     }
                 },
-                (..=-1, false) => entry.read_children_path = None,
+                (nw @ ..=-1, false) => {
+                    info!("Negative weight of {} - skipping children: {:#?}", nw, entry_name);
+                    entry.read_children_path = None;
+                },
                 (0, _) => (),
-                (1.., _) => {
+                (pw @ 1.., _) => {
                     entry.read_children_path = None;
                     let data = MatchData {
                         path: entry.path(),
@@ -66,6 +73,8 @@ impl<'entries> MatchingState<'entries> {
                         params: accumulated_params,
                         dangerous: self.cache.dangerous,
                     };
+                    info!("Positive weight of {} - sending match: {:#?}", pw, entry_name);
+                    debug!("{:#?}", data);
                     self.cache.sender.as_ref().unwrap().send(data).expect("Sender error (did UI panic?)");
                 },
             }
