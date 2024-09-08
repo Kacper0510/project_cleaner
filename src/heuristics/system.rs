@@ -10,27 +10,21 @@ struct SystemConstants {
 const CONSTANTS: SystemConstants = SystemConstants {
     icon: "",
     color: IconColor(26),
-    paths: &[
-        "AppData",
-    ],
+    paths: &["AppData", "Windows", "Program Files", "Program Files (x86)"],
 };
 
 #[cfg(all(unix, target_os = "macos"))]
 const CONSTANTS: SystemConstants = SystemConstants {
     icon: "",
     color: IconColor(255),
-    paths: &[
-        "Applications",
-    ],
+    paths: &["Applications"],
 };
 
 #[cfg(all(unix, not(target_os = "macos")))]
 const CONSTANTS: SystemConstants = SystemConstants {
     icon: "",
     color: IconColor(255),
-    paths: &[
-        "opt",
-    ],
+    paths: &["opt", "usr", "var"],
 };
 
 heuristic!(System, CONSTANTS.icon, "os", CONSTANTS.color, state, {
