@@ -1,5 +1,9 @@
 use super::CommentedLang;
-use std::{iter::Sum, ops::Add, path::{Path, PathBuf}};
+use std::{
+    iter::Sum,
+    ops::Add,
+    path::{Path, PathBuf},
+};
 
 /// Data structure representing a match found by one or more heuristics.
 #[derive(Debug, Clone)]
@@ -40,10 +44,12 @@ impl MatchData {
         &self.params.languages
     }
 
-    /// Returns whether the match should be hidden/excluded while displaying/deleting files and directories.
+    /// Returns whether the match originated from a dangerous (possibly system-managed) path.
+    ///
+    /// Always false if the [corresponding `Scanner` field](super::Scanner::dangerous) is turned off.
     #[inline]
-    pub fn hidden(&self) -> bool {
-        self.params.hidden
+    pub fn dangerous(&self) -> bool {
+        self.params.dangerous
     }
 }
 
@@ -55,8 +61,8 @@ pub struct MatchParameters {
     pub(super) weight: i32,
     /// Reasons for the match, mostly different programming languages.
     pub(super) languages: Vec<CommentedLang>,
-    /// Whether the match should be hidden/excluded while displaying/deleting files and directories.
-    pub(super) hidden: bool,
+    /// Whether the match originated from a dangerous (possibly system-managed) path.
+    pub(super) dangerous: bool,
     /// Whether the default group path in [`MatchData`] should be overridden.
     pub(super) group_override: GroupOverride,
 }
@@ -73,23 +79,29 @@ impl MatchParameters {
         }
     }
 
-    /// Sets custom weight for the newly added match. May be negative.
+    /// Sets custom weight for the newly added match. May be negative to indicate dangerous paths/files.
     #[inline]
     pub fn weight(&mut self, weight: i32) -> &mut Self {
         self.weight = weight;
         self
     }
 
-    /// Sets the `hidden` flag for the newly added match.
+    /// Sets the `dangerous` flag for the newly added match.
+    ///
+    /// To be used only with negative custom weights.
     #[inline]
-    pub fn hidden(&mut self) -> &mut Self {
-        self.hidden = true;
+    pub fn dangerous(&mut self) -> &mut Self {
+        if self.weight > 0 {
+            self.weight *= -1;
+        }
+        self.dangerous = true;
         self
     }
 
     /// Suggests custom group for the newly added match.
-    /// 
+    ///
     /// It may not be considered in the final result if a custom group conflict occurs.
+    #[inline]
     pub fn custom_group(&mut self, group: PathBuf) -> &mut Self {
         self.group_override = GroupOverride::Override(group);
         self
@@ -102,7 +114,7 @@ impl Add for MatchParameters {
     fn add(mut self, rhs: Self) -> Self {
         self.weight += rhs.weight;
         self.languages.extend(rhs.languages);
-        self.hidden |= rhs.hidden;
+        self.dangerous |= rhs.dangerous;
         self.group_override = self.group_override + rhs.group_override;
         self
     }

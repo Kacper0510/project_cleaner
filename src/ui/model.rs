@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct MatchGroup {
-    pub hidden: bool,
+    pub dangerous: bool,
     pub group_path: PathBuf,
     pub status: MatchDataUIStatus,
     pub matches: Vec<MatchDataUI>,
@@ -52,11 +52,11 @@ impl TableData {
         self.idx += 1;
 
         if let Some(record) = self.data.iter_mut().find(|ele| ele.group_path == path) {
-            record.hidden |= data.hidden();
+            record.dangerous |= data.dangerous();
             record.matches.push(ui_data);
         } else {
             self.data.push(MatchGroup {
-                hidden: data.hidden(),
+                dangerous: data.dangerous(),
                 group_path: path,
                 status: MatchDataUIStatus::Found,
                 matches: vec![ui_data],

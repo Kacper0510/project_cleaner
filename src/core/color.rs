@@ -1,25 +1,10 @@
+/// Contains [ANSI 8-bit color index](https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit).
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub struct IconColor {
-    pub normal: u8,
-    pub selected: u8,
-}
-
-impl IconColor {
-    pub const fn new(normal: u8, selected: u8) -> Self {
-        IconColor {
-            normal,
-            selected,
-        }
-    }
-}
+pub struct IconColor(pub u8);
 
 #[cfg(feature = "cli")]
-impl IconColor {
-    pub fn normal(self) -> ratatui::style::Color {
-        ratatui::style::Color::Indexed(self.normal)
-    }
-
-    pub fn selected(self) -> ratatui::style::Color {
-        ratatui::style::Color::Indexed(self.selected)
+impl From<IconColor> for ratatui::style::Color {
+    fn from(value: IconColor) -> Self {
+        ratatui::style::Color::Indexed(value.0)
     }
 }

@@ -1,64 +1,90 @@
-use super::{CommentedLang, Entry, Heuristic, InheritedFiles, MatchData, MatchParameters};
+use super::{
+    scanner::{self, ScannerCache},
+    CommentedLang, Heuristic, MatchData, MatchParameters,
+};
 use std::{
     any::Any,
     collections::HashMap,
     ffi::{OsStr, OsString},
     fs::FileType,
     ops::DerefMut,
-    path::{Path, PathBuf},
-    sync::mpsc::Sender,
+    path::{Path, PathBuf}, sync::mpsc::SendError,
 };
+use tracing::{debug, error, info, warn};
 
 /// State passed to heuristics to manipulate matches and query current directory contents.
 ///
 /// Only this type should be used to interact with the filesystem and return meaningful heuristic result to the user.
 pub struct MatchingState<'entries> {
     /// Optimized storage for current directory contents.
-    contents: HashMap<OsString, (&'entries mut Entry, Vec<MatchParameters>)>,
+    contents: HashMap<OsString, (&'entries mut scanner::Entry, Vec<MatchParameters>)>,
     /// Path of the current directory.
     parent_path: &'entries Path,
     /// Current heuristic being processed.
     pub(super) current_heuristic: Option<&'static dyn Heuristic>,
-    /// Files inherited from parent directories, hashed by heuristic type.
-    inherited_files: &'entries mut InheritedFiles,
+    /// [`ScannerCache`] associated with the current path.
+    cache: &'entries mut ScannerCache,
+    /// Returned from [`Self::add_match()`] when an invalid file is chosen for a match.
+    broken_heuristic_params: Option<MatchParameters>,
 }
 
 impl<'entries> MatchingState<'entries> {
-    /// Creates a new matching state for the specified directory, its entries and inherited files.
+    /// Creates a new matching state for the specified directory, its entries and scanner cache.
     pub(super) fn new(
-        children: &'entries mut [&mut Entry],
-        files: &'entries mut InheritedFiles,
+        children: &'entries mut [&mut scanner::Entry],
+        cache: &'entries mut ScannerCache,
         path: &'entries Path,
     ) -> Self {
         Self {
             contents: children.iter_mut().map(|v| (v.file_name.clone(), (v.deref_mut(), vec![]))).collect(),
             current_heuristic: None,
-            inherited_files: files,
+            cache,
             parent_path: path,
+            broken_heuristic_params: None,
         }
     }
 
     /// Function to be called after every heuristic has done its job.
     ///
     /// This function filters and reorganizes all collected data in order to send it to the specified channel.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the channel is closed, which should not happen in normal operation.
-    pub(super) fn process_collected_data(&mut self, sender: &Sender<MatchData>) {
-        for (_, (entry, params)) in self.contents.drain() {
+    /// `include_dangerous` changes the behavior of this function to mark paths as dangerous instead of skipping them altogether.
+    pub(super) fn process_collected_data(&mut self, include_dangerous: bool) -> Result<(), SendError<MatchData>> {
+        for (entry_name, (entry, params)) in self.contents.drain() {
             let accumulated_params: MatchParameters = params.into_iter().sum();
-            if accumulated_params.weight <= 0 {
-                continue;
+            match accumulated_params.weight {
+                nw @ ..=-1 if !accumulated_params.dangerous => {
+                    info!("Negative weight of {}, but not dangerous: {:#?}", nw, entry_name);
+                },
+                nw @ ..=-1 if include_dangerous => {
+                    if self.cache.dangerous {
+                        warn!("{:#?} is already dangerous!", entry_name);
+                    } else if entry.file_type.is_dir() {
+                        info!("Negative weight of {}, marking as dangerous: {:#?}", nw, entry_name);
+                        self.cache.marked_to_be_dangerous.insert(entry_name);
+                    }
+                },
+                nw @ ..=-1 => {
+                    info!("Negative weight of {}, skipping children: {:#?}", nw, entry_name);
+                    entry.read_children_path = None;
+                },
+                0 => (),
+                pw @ 1.. => {
+                    entry.read_children_path = None;
+                    let data = MatchData {
+                        path: entry.path(),
+                        group: self.parent_path.to_owned(),
+                        params: MatchParameters {
+                            dangerous: self.cache.dangerous,
+                            ..accumulated_params
+                        },
+                    };
+                    info!("Positive weight of {}, sending match: {:#?}", pw, entry_name);
+                    debug!("{:#?}", data);
+                    self.cache.sender.as_ref().unwrap().send(data)?;
+                },
             }
-            entry.read_children_path = None;
-            let data = MatchData {
-                path: entry.path(),
-                group: self.parent_path.to_owned(),
-                params: accumulated_params,
-            };
-            sender.send(data).expect("Sender error (did UI panic?)");
         }
+        Ok(())
     }
 
     /// Returns the path of the current directory.
@@ -75,7 +101,7 @@ impl<'entries> MatchingState<'entries> {
     /// It is used to check for matches in files that are not in the current directory
     /// and/or store additional data for future calls.
     pub fn inherited_files(&mut self) -> &mut Vec<PathBuf> {
-        self.inherited_files.entry(self.current_heuristic.type_id()).or_default()
+        self.cache.inherited_files.entry(self.current_heuristic.type_id()).or_default()
     }
 
     /// Returns the path of the specified file in the current directory if it exists and is accesible.
@@ -104,10 +130,6 @@ impl<'entries> MatchingState<'entries> {
     ///
     /// The `comment` parameter is used to describe the match and is displayed to the user.
     /// Additional match options may be changed by calling methods of the returned reference.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the specified file or directory does not exist in the current directory.
     pub fn add_match<S>(&mut self, name: &S, comment: &str) -> &mut MatchParameters
     where S: AsRef<OsStr> + ?Sized + std::fmt::Debug {
         let new = MatchParameters::new(CommentedLang {
@@ -118,7 +140,9 @@ impl<'entries> MatchingState<'entries> {
             v.push(new);
             v.last_mut().unwrap()
         } else {
-            panic!("Heuristic \"{}\" tried to add invalid match: {:#?}", self.current_heuristic.unwrap(), name)
+            error!("Heuristic \"{}\" tried to add an invalid match: {:#?}", self.current_heuristic.unwrap(), name);
+            self.broken_heuristic_params = Some(new);
+            self.broken_heuristic_params.as_mut().unwrap()
         }
     }
 }

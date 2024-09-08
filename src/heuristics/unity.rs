@@ -17,7 +17,7 @@ const DIRS: [&str; 14] = [
     "recordings",
 ];
 
-heuristic!(Unity, "󰚯", "unity", IconColor::new(15, 234), state, {
+heuristic!(Unity, "󰚯", "unity", IconColor(15), state, {
     if state.has_directory("Assets").is_some()
         && state.has_directory("Packages").is_some()
         && state.has_directory("ProjectSettings").is_some()

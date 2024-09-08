@@ -38,24 +38,22 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
         .iter()
         .enumerate()
         .map(|(idx, ele)| {
-            let is_selected = selected.and_then(|s| if s == idx { Some(()) } else { None }).is_some();
-            let fg: Color = if is_selected { Color::Black } else { Color::White };
-            let bg = if is_selected { Color::White } else { Color::Reset };
-
             let icons: HashSet<_> = ele.matches.iter().flat_map(|e| &e.lang).map(|e| e.lang).collect();
-            let mut icons: Vec<&&crate::core::Lang> = icons.iter().collect();
+            let mut icons: Vec<_> = icons.iter().collect();
             icons.sort();
 
             let icons: Vec<_> = icons
                 .iter()
                 .map(|e| {
                     Span::styled(
-                        if no_icons { format!("{} ", e) } else { e.icon.to_owned() },
-                        Style::default().fg(if is_selected { e.color.selected() } else { e.color.normal() }),
+                        format!("{} ", if no_icons { e.short } else { e.icon }),
+                        Color::from(e.color),
                     )
                 })
                 .collect();
 
+            let is_selected = selected.and_then(|s| if s == idx { Some(()) } else { None }).is_some();
+            let fg = if is_selected { Color::Black } else { Color::White };
             let mut line = match ele.status {
                 MatchDataUIStatus::Selected => {
                     vec![Span::styled("[del]", Style::default().fg(Color::Red)), Span::from(" ")]
@@ -69,29 +67,25 @@ fn table_data_to_rows(data: &TableData, no_icons: bool, selected: Option<usize>)
                 line.push(Span::styled(" {...}", Color::DarkGray));
             }
 
-            let warn_color = if is_selected { Color::Yellow } else { Color::LightYellow };
             Row::new(vec![
                 Cell::new(Line::from(icons)),
-                Cell::new(Line::from(line)),
-                Cell::new(Line::from(if ele.hidden {
-                    if no_icons {
-                        Span::styled("(!)", warn_color)
-                    } else {
-                        Span::styled("  ", warn_color)
-                    }
+                Cell::new(Line::from(line)).bg(if is_selected { Color::White } else { Color::Reset }),
+                Cell::new(Line::from(if ele.dangerous {
+                    Span::styled(if no_icons { "(!)" } else { "  " }, Color::LightYellow)
                 } else {
                     Span::from("")
                 })),
-                Cell::new(Span::styled(
-                    if let Some(s) = &ele.stats().last_mod_days() { format!("{}d", s) } else { "---".to_owned() },
-                    fg,
-                )),
-                Cell::new(Span::styled(
-                    if let Some(s) = &ele.stats().size { format!("{}", s) } else { "---".to_owned() },
-                    fg,
-                )),
+                Cell::new(Span::from(if let Some(s) = &ele.stats().last_mod_days() {
+                    format!("{}d", s)
+                } else {
+                    "---".to_owned()
+                })),
+                Cell::new(Span::from(if let Some(s) = &ele.stats().size {
+                    format!("{}", s)
+                } else {
+                    "---".to_owned()
+                })),
             ])
-            .bg(bg)
         })
         .collect()
 }

@@ -1,4 +1,4 @@
-use project_cleaner::walk_directories;
+use project_cleaner::Scanner;
 
 #[test]
 fn current_project_directory_walk() {
@@ -15,8 +15,8 @@ fn current_project_directory_walk() {
         assert!(counter > 0, "target directory wasn't detected");
     };
     let handle = std::thread::spawn(collector);
-    
-    walk_directories(&directory, sender, |path| {
+
+    Scanner::new(&directory, sender).scan_with_progress().for_each(|path| {
         let path = path.unwrap();
         println!("Scanning {}", path.display());
         assert!(!path.ends_with("target/debug"), "target directory wasn't skipped");

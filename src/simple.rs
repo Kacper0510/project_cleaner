@@ -1,9 +1,8 @@
+use crate::{core::MatchData, Scanner};
 use std::{
     env::current_dir,
     io::{stdin, stdout, Write},
 };
-
-use crate::core::MatchData;
 
 pub fn run(args: super::args::Args) {
     let directory = args.path.unwrap_or_else(|| {
@@ -14,10 +13,7 @@ pub fn run(args: super::args::Args) {
     let collector = move || {
         let mut collected = vec![];
         while let Ok(data) = receiver.recv() {
-            if !args.dangerous && data.hidden() {
-                continue;
-            }
-            println!("{}{}", if data.hidden() { "(Dangerous!) " } else { "" }, data.path.display());
+            println!("{}{}", if data.dangerous() { "(Dangerous!) " } else { "" }, data.path.display());
             for language in data.languages() {
                 println!("\t-> {}", language);
             }
@@ -28,7 +24,9 @@ pub fn run(args: super::args::Args) {
     let handle = std::thread::spawn(collector);
 
     println!("Searching for files and directories to delete...");
-    crate::walk_directories(&directory, sender, |progress| {
+    let mut scanner = Scanner::new(&directory, sender);
+    scanner.dangerous = args.dangerous;
+    scanner.scan_with_progress().for_each(|progress| {
         if let Err(error) = progress {
             if let Some(path) = error.path() {
                 println!("Failed to read {} ({})", path.display(), error);
