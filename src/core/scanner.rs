@@ -1,9 +1,12 @@
 use super::{Heuristic, InheritedFiles, MatchData, MatchingState};
 use jwalk::{ClientState, DirEntry, Result, WalkDirGeneric};
 use std::{
-    collections::HashSet, ffi::OsString, path::{Path, PathBuf}, sync::mpsc::Sender
+    collections::HashSet,
+    ffi::OsString,
+    path::{Path, PathBuf},
+    sync::mpsc::Sender,
 };
-use tracing::{info, trace};
+use tracing::{error, info, trace};
 
 /// Directory scanner cache for storing inherited files and a channel to send matches to.
 #[derive(Debug, Default, Clone)]
@@ -103,10 +106,15 @@ impl Scanner {
                     trace!("Running heuristic {} for path {}", heuristic.info(), path.display());
                     heuristic.check_for_matches(&mut state);
                 }
-                state.process_collected_data(self.dangerous);
 
-                // Skip files in the progress iteration, yield only directories and errors
-                children.retain(|f| if let Ok(f) = f { f.file_type.is_dir() } else { true });
+                if state.process_collected_data(self.dangerous).is_err() {
+                    // Stop iteration as fast as possible
+                    children.clear();
+                    error!("Sender failure!");
+                } else {
+                    // Skip files in the progress iteration, yield only directories and errors
+                    children.retain(|f| if let Ok(f) = f { f.file_type.is_dir() } else { true });
+                }
             })
             .into_iter()
             .map(|entry| {

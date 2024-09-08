@@ -8,9 +8,9 @@ use std::{
     ffi::{OsStr, OsString},
     fs::FileType,
     ops::DerefMut,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, sync::mpsc::SendError,
 };
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 /// State passed to heuristics to manipulate matches and query current directory contents.
 ///
@@ -24,6 +24,8 @@ pub struct MatchingState<'entries> {
     pub(super) current_heuristic: Option<&'static dyn Heuristic>,
     /// [`ScannerCache`] associated with the current path.
     cache: &'entries mut ScannerCache,
+    /// Returned from [`Self::add_match()`] when an invalid file is chosen for a match.
+    broken_heuristic_params: Option<MatchParameters>,
 }
 
 impl<'entries> MatchingState<'entries> {
@@ -38,17 +40,15 @@ impl<'entries> MatchingState<'entries> {
             current_heuristic: None,
             cache,
             parent_path: path,
+            broken_heuristic_params: None,
         }
     }
 
     /// Function to be called after every heuristic has done its job.
     ///
     /// This function filters and reorganizes all collected data in order to send it to the specified channel.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the channel is closed, which should not happen in normal operation.
-    pub(super) fn process_collected_data(&mut self, include_dangerous: bool) {
+    /// `include_dangerous` changes the behavior of this function to mark paths as dangerous instead of skipping them altogether.
+    pub(super) fn process_collected_data(&mut self, include_dangerous: bool) -> Result<(), SendError<MatchData>> {
         for (entry_name, (entry, params)) in self.contents.drain() {
             let accumulated_params: MatchParameters = params.into_iter().sum();
             match accumulated_params.weight {
@@ -80,10 +80,11 @@ impl<'entries> MatchingState<'entries> {
                     };
                     info!("Positive weight of {}, sending match: {:#?}", pw, entry_name);
                     debug!("{:#?}", data);
-                    self.cache.sender.as_ref().unwrap().send(data).expect("Sender error (did UI panic?)");
+                    self.cache.sender.as_ref().unwrap().send(data)?;
                 },
             }
         }
+        Ok(())
     }
 
     /// Returns the path of the current directory.
@@ -129,10 +130,6 @@ impl<'entries> MatchingState<'entries> {
     ///
     /// The `comment` parameter is used to describe the match and is displayed to the user.
     /// Additional match options may be changed by calling methods of the returned reference.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the specified file or directory does not exist in the current directory.
     pub fn add_match<S>(&mut self, name: &S, comment: &str) -> &mut MatchParameters
     where S: AsRef<OsStr> + ?Sized + std::fmt::Debug {
         let new = MatchParameters::new(CommentedLang {
@@ -143,7 +140,9 @@ impl<'entries> MatchingState<'entries> {
             v.push(new);
             v.last_mut().unwrap()
         } else {
-            panic!("Heuristic \"{}\" tried to add invalid match: {:#?}", self.current_heuristic.unwrap(), name)
+            error!("Heuristic \"{}\" tried to add an invalid match: {:#?}", self.current_heuristic.unwrap(), name);
+            self.broken_heuristic_params = Some(new);
+            self.broken_heuristic_params.as_mut().unwrap()
         }
     }
 }
