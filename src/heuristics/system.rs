@@ -24,7 +24,7 @@ const CONSTANTS: SystemConstants = SystemConstants {
 const CONSTANTS: SystemConstants = SystemConstants {
     icon: "",
     color: IconColor(255),
-    paths: &["opt", "usr", "var"],
+    paths: &["opt", "usr", "var", ".local", ".config"],
 };
 
 heuristic!(System, CONSTANTS.icon, "os", CONSTANTS.color, state, {

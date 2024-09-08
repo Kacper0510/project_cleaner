@@ -56,6 +56,12 @@ impl CommentedLang {
         self.lang.name
     }
 
+    /// Returns color associated with the underlying [`Lang`].
+    #[inline]
+    pub fn color(&self) -> IconColor {
+        self.lang.color
+    }
+
     /// Returns the icon representing the language or heuristic.
     ///
     /// This icon should be an emoji or [a nerd font symbol](https://www.nerdfonts.com/).
