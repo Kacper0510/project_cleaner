@@ -19,3 +19,10 @@ desktop.ini
 
 .env
 tmp
+
+# Direnv
+.direnv
+.envrc
+
+# Nix
+result
