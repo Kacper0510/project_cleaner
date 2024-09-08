@@ -52,11 +52,11 @@ impl TableData {
         self.idx += 1;
 
         if let Some(record) = self.data.iter_mut().find(|ele| ele.group_path == path) {
-            record.dangerous |= data.dangerous;
+            record.dangerous |= data.dangerous();
             record.matches.push(ui_data);
         } else {
             self.data.push(MatchGroup {
-                dangerous: data.dangerous,
+                dangerous: data.dangerous(),
                 group_path: path,
                 status: MatchDataUIStatus::Found,
                 matches: vec![ui_data],

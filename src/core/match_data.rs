@@ -1,15 +1,15 @@
 use super::CommentedLang;
-use std::{iter::Sum, ops::Add, path::{Path, PathBuf}};
+use std::{
+    iter::Sum,
+    ops::Add,
+    path::{Path, PathBuf},
+};
 
 /// Data structure representing a match found by one or more heuristics.
 #[derive(Debug, Clone)]
 pub struct MatchData {
     /// Path of the matched file.
     pub path: PathBuf,
-    /// Whether the match originated from a dangerous (possibly system-managed) path.
-    /// 
-    /// Always false if the [corresponding `Scanner` field](super::Scanner::dangerous) is turned off. 
-    pub dangerous: bool,
     /// Path of the directory which was being processed while the match was found.
     ///
     /// Used to group multiple results in a meaningful way.
@@ -43,6 +43,14 @@ impl MatchData {
     pub fn languages(&self) -> &[CommentedLang] {
         &self.params.languages
     }
+
+    /// Returns whether the match originated from a dangerous (possibly system-managed) path.
+    ///
+    /// Always false if the [corresponding `Scanner` field](super::Scanner::dangerous) is turned off.
+    #[inline]
+    pub fn dangerous(&self) -> bool {
+        self.params.dangerous
+    }
 }
 
 /// Main match parameters that a heuristic sets, returned from [`add_match()`](super::MatchingState::add_match()).
@@ -53,6 +61,8 @@ pub struct MatchParameters {
     pub(super) weight: i32,
     /// Reasons for the match, mostly different programming languages.
     pub(super) languages: Vec<CommentedLang>,
+    /// Whether the match originated from a dangerous (possibly system-managed) path.
+    pub(super) dangerous: bool,
     /// Whether the default group path in [`MatchData`] should be overridden.
     pub(super) group_override: GroupOverride,
 }
@@ -76,8 +86,20 @@ impl MatchParameters {
         self
     }
 
+    /// Sets the `dangerous` flag for the newly added match.
+    ///
+    /// To be used only with negative custom weights.
+    #[inline]
+    pub fn dangerous(&mut self) -> &mut Self {
+        if self.weight > 0 {
+            self.weight *= -1;
+        }
+        self.dangerous = true;
+        self
+    }
+
     /// Suggests custom group for the newly added match.
-    /// 
+    ///
     /// It may not be considered in the final result if a custom group conflict occurs.
     #[inline]
     pub fn custom_group(&mut self, group: PathBuf) -> &mut Self {
@@ -92,6 +114,7 @@ impl Add for MatchParameters {
     fn add(mut self, rhs: Self) -> Self {
         self.weight += rhs.weight;
         self.languages.extend(rhs.languages);
+        self.dangerous |= rhs.dangerous;
         self.group_override = self.group_override + rhs.group_override;
         self
     }

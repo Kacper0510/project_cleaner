@@ -13,7 +13,7 @@ pub fn run(args: super::args::Args) {
     let collector = move || {
         let mut collected = vec![];
         while let Ok(data) = receiver.recv() {
-            println!("{}{}", if data.dangerous { "(Dangerous!) " } else { "" }, data.path.display());
+            println!("{}{}", if data.dangerous() { "(Dangerous!) " } else { "" }, data.path.display());
             for language in data.languages() {
                 println!("\t-> {}", language);
             }

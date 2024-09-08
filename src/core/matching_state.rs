@@ -51,29 +51,34 @@ impl<'entries> MatchingState<'entries> {
     pub(super) fn process_collected_data(&mut self, include_dangerous: bool) {
         for (entry_name, (entry, params)) in self.contents.drain() {
             let accumulated_params: MatchParameters = params.into_iter().sum();
-            match (accumulated_params.weight, include_dangerous) {
-                (nw @ ..=-1, true) => {
+            match accumulated_params.weight {
+                nw @ ..=-1 if !accumulated_params.dangerous => {
+                    info!("Negative weight of {}, but not dangerous: {:#?}", nw, entry_name);
+                },
+                nw @ ..=-1 if include_dangerous => {
                     if self.cache.dangerous {
                         warn!("{:#?} is already dangerous!", entry_name);
                     } else if entry.file_type.is_dir() {
-                        info!("Negative weight of {} - marked as dangerous: {:#?}", nw, entry_name);
+                        info!("Negative weight of {}, marking as dangerous: {:#?}", nw, entry_name);
                         self.cache.marked_to_be_dangerous.insert(entry_name);
                     }
                 },
-                (nw @ ..=-1, false) => {
-                    info!("Negative weight of {} - skipping children: {:#?}", nw, entry_name);
+                nw @ ..=-1 => {
+                    info!("Negative weight of {}, skipping children: {:#?}", nw, entry_name);
                     entry.read_children_path = None;
                 },
-                (0, _) => (),
-                (pw @ 1.., _) => {
+                0 => (),
+                pw @ 1.. => {
                     entry.read_children_path = None;
                     let data = MatchData {
                         path: entry.path(),
                         group: self.parent_path.to_owned(),
-                        params: accumulated_params,
-                        dangerous: self.cache.dangerous,
+                        params: MatchParameters {
+                            dangerous: self.cache.dangerous,
+                            ..accumulated_params
+                        },
                     };
-                    info!("Positive weight of {} - sending match: {:#?}", pw, entry_name);
+                    info!("Positive weight of {}, sending match: {:#?}", pw, entry_name);
                     debug!("{:#?}", data);
                     self.cache.sender.as_ref().unwrap().send(data).expect("Sender error (did UI panic?)");
                 },

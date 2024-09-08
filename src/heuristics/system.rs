@@ -36,7 +36,7 @@ const CONSTANTS: SystemConstants = SystemConstants {
 heuristic!(System, CONSTANTS.icon, "os", CONSTANTS.color, state, {
     for path in CONSTANTS.paths {
         if state.has_directory(path).is_some() {
-            state.add_match(&path, &format!("{} is a system path.", path)).weight(-1000);
+            state.add_match(&path, &format!("{} is a system path.", path)).dangerous();
         }
     }
 });
