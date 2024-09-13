@@ -1,6 +1,7 @@
 use crate::core::Heuristic;
 
 mod direnv;
+mod flutter;
 mod git;
 mod hidden;
 mod js;
@@ -24,4 +25,5 @@ pub const ALL_HEURISTICS: &[&dyn Heuristic] = &[
     &git::INSTANCE,
     &venv::INSTANCE,
     &direnv::INSTANCE,
+    &flutter::INSTANCE,
 ];
