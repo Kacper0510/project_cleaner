@@ -1,5 +1,6 @@
 use crate::core::Heuristic;
 
+mod direnv;
 mod git;
 mod hidden;
 mod js;
@@ -22,4 +23,5 @@ pub const ALL_HEURISTICS: &[&dyn Heuristic] = &[
     &python::INSTANCE,
     &git::INSTANCE,
     &venv::INSTANCE,
+    &direnv::INSTANCE,
 ];
