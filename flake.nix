@@ -17,7 +17,7 @@
       devShells = forAllSystems (pkgs: {
         default =
           pkgs.mkShell {
-            nativeBuildInputs = with pkgs; [ rustc cargo gcc rustfmt clippy ];
+            nativeBuildInputs = with pkgs; [ rustc cargo gcc rustfmt clippy rustup];
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
           };
       });

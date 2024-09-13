@@ -7,6 +7,7 @@ mod python;
 mod rust;
 mod system;
 mod unity;
+mod venv;
 
 /// A list of all heuristics implemented by default in this crate.
 ///
@@ -20,4 +21,5 @@ pub const ALL_HEURISTICS: &[&dyn Heuristic] = &[
     &js::INSTANCE,
     &python::INSTANCE,
     &git::INSTANCE,
+    &venv::INSTANCE,
 ];
