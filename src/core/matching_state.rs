@@ -111,6 +111,17 @@ impl<'entries> MatchingState<'entries> {
         self.contents.get(OsStr::new(name)).filter(|v| v.0.file_type.is_file()).map(|v| v.0.path())
     }
 
+    pub fn match_file(&self, re: Regex) -> Vec<PathBuf> {
+        self.contents
+            .iter()
+            .filter_map(|(key, v)| key.to_str().map(|s| (s, v)))
+            .filter(|(key, _)| re.is_match(key))
+            .map(|(_, v)| v)
+            .filter(|v| v.0.file_type.is_file())
+            .map(|v| v.0.path())
+            .collect()
+    }
+
     /// Returns the path of the specified directory in the current directory if it exists and is accesible.
     ///
     /// The result may be used to traverse the directory contents, but it is recommended to use

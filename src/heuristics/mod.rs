@@ -4,6 +4,7 @@ mod cmake;
 mod direnv;
 mod flutter;
 mod git;
+mod gradle;
 mod hidden;
 mod js;
 mod python;
@@ -28,4 +29,5 @@ pub const ALL_HEURISTICS: &[&dyn Heuristic] = &[
     &direnv::INSTANCE,
     &flutter::INSTANCE,
     &cmake::INSTANCE,
+    &gradle::INSTANCE,
 ];
