@@ -1,5 +1,6 @@
 use crate::core::Heuristic;
 
+mod cmake;
 mod direnv;
 mod flutter;
 mod git;
@@ -26,4 +27,5 @@ pub const ALL_HEURISTICS: &[&dyn Heuristic] = &[
     &venv::INSTANCE,
     &direnv::INSTANCE,
     &flutter::INSTANCE,
+    &cmake::INSTANCE,
 ];

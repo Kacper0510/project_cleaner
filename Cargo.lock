@@ -717,6 +717,7 @@ dependencies = [
  "ignore",
  "jwalk",
  "ratatui",
+ "regex",
  "size",
  "throbber-widgets-tui",
  "tracing",

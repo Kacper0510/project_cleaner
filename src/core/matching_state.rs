@@ -2,6 +2,7 @@ use super::{
     scanner::{self, ScannerCache},
     CommentedLang, Heuristic, MatchData, MatchParameters,
 };
+use regex::Regex;
 use std::{
     any::Any,
     collections::HashMap,
@@ -116,6 +117,17 @@ impl<'entries> MatchingState<'entries> {
     /// caching via [`inherited_files()`](Self::inherited_files()) instead (if possible).
     pub fn has_directory(&self, name: &str) -> Option<PathBuf> {
         self.contents.get(OsStr::new(name)).filter(|v| v.0.file_type.is_dir()).map(|v| v.0.path())
+    }
+
+    pub fn match_directory(&self, re: Regex) -> Vec<PathBuf> {
+        self.contents
+            .iter()
+            .filter_map(|(key, v)| key.to_str().map(|s| (s, v)))
+            .filter(|(key, _)| re.is_match(key))
+            .map(|(_, v)| v)
+            .filter(|v| v.0.file_type.is_dir())
+            .map(|v| v.0.path())
+            .collect()
     }
 
     /// Returns an iterator over all files/subdirectories in the current directory.
