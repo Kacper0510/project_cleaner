@@ -2,7 +2,7 @@ use crate::heuristic;
 use regex::Regex;
 
 heuristic!(Gradle, "", "gradle", IconColor(25), state, {
-    if !state.match_file(Regex::new(r"^gradlew(\.bat)?$").expect("Regex error :)")).is_empty() {
+    if !state.match_file(&Regex::new(r"^gradlew(\.bat)?$").expect("Regex error :)")).is_empty() {
         if state.has_directory("build").is_some() {
             state.add_match("build", "Found gradlew and build directory.");
         }

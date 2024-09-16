@@ -76,7 +76,10 @@ impl<'entries> MatchingState<'entries> {
                     let data = MatchData {
                         path: entry.path(),
                         group: self.parent_path.to_owned(),
-                        params: MatchParameters { dangerous: self.cache.dangerous, ..accumulated_params },
+                        params: MatchParameters {
+                            dangerous: self.cache.dangerous,
+                            ..accumulated_params
+                        },
                     };
                     info!("Positive weight of {}, sending match: {:#?}", pw, entry_name);
                     debug!("{:#?}", data);
@@ -111,7 +114,8 @@ impl<'entries> MatchingState<'entries> {
         self.contents.get(OsStr::new(name)).filter(|v| v.0.file_type.is_file()).map(|v| v.0.path())
     }
 
-    pub fn match_file(&self, re: Regex) -> Vec<PathBuf> {
+    /// Returns paths of all files matching given [`Regex`] in the current directory.
+    pub fn match_file(&self, re: &Regex) -> Vec<PathBuf> {
         self.contents
             .iter()
             .filter_map(|(key, v)| key.to_str().map(|s| (s, v)))
@@ -130,7 +134,8 @@ impl<'entries> MatchingState<'entries> {
         self.contents.get(OsStr::new(name)).filter(|v| v.0.file_type.is_dir()).map(|v| v.0.path())
     }
 
-    pub fn match_directory(&self, re: Regex) -> Vec<PathBuf> {
+    /// Returns paths of all subdirectories matching given [`Regex`] in the current directory.
+    pub fn match_directory(&self, re: &Regex) -> Vec<PathBuf> {
         self.contents
             .iter()
             .filter_map(|(key, v)| key.to_str().map(|s| (s, v)))
@@ -153,9 +158,7 @@ impl<'entries> MatchingState<'entries> {
     /// The `comment` parameter is used to describe the match and is displayed to the user.
     /// Additional match options may be changed by calling methods of the returned reference.
     pub fn add_match<S>(&mut self, name: &S, comment: &str) -> &mut MatchParameters
-    where
-        S: AsRef<OsStr> + ?Sized + std::fmt::Debug,
-    {
+    where S: AsRef<OsStr> + ?Sized + std::fmt::Debug {
         let new = MatchParameters::new(CommentedLang {
             lang: self.current_heuristic.unwrap().info(),
             comment: comment.to_owned(),
