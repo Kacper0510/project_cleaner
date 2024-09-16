@@ -190,6 +190,7 @@ impl App {
 
     pub fn hide_info(&mut self) {
         self.popup_state = PopUpState::Closed;
+        self.scroll_state.scroll_to_top();
         self.info_path = None;
     }
 

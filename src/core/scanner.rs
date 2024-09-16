@@ -29,10 +29,7 @@ impl ScannerCache {
     #[inline]
     fn new(sender: Sender<MatchData>) -> Self {
         let sender = Some(sender);
-        Self {
-            sender,
-            ..Default::default()
-        }
+        Self { sender, ..Default::default() }
     }
 }
 
@@ -66,12 +63,7 @@ impl Scanner {
     /// Constructs a new [`Scanner`] with a default heuristics list.
     #[inline]
     pub fn new(root_path: &Path, sender: Sender<MatchData>) -> Self {
-        Self {
-            root: root_path.to_owned(),
-            sender,
-            heuristics: crate::ALL_HEURISTICS.to_vec(),
-            dangerous: false,
-        }
+        Self { root: root_path.to_owned(), sender, heuristics: crate::ALL_HEURISTICS.to_vec(), dangerous: false }
     }
 
     /// Starts a scan. This is a blocking operation.
@@ -93,6 +85,8 @@ impl Scanner {
             .root_read_dir_state(ScannerCache::new(self.sender))
             .skip_hidden(false)
             .process_read_dir(move |_depth, path, read_dir_state, children| {
+                trace!("Scanning directory: {:#?}", path);
+
                 if path.file_name().is_some_and(|name| read_dir_state.marked_to_be_dangerous.contains(name)) {
                     read_dir_state.dangerous = true;
                     read_dir_state.marked_to_be_dangerous.clear();

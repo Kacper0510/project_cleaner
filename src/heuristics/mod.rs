@@ -1,12 +1,17 @@
 use crate::core::Heuristic;
 
+mod cmake;
+mod direnv;
+mod flutter;
 mod git;
+mod gradle;
 mod hidden;
 mod js;
 mod python;
 mod rust;
 mod system;
 mod unity;
+mod venv;
 
 /// A list of all heuristics implemented by default in this crate.
 ///
@@ -20,4 +25,9 @@ pub const ALL_HEURISTICS: &[&dyn Heuristic] = &[
     &js::INSTANCE,
     &python::INSTANCE,
     &git::INSTANCE,
+    &venv::INSTANCE,
+    &direnv::INSTANCE,
+    &flutter::INSTANCE,
+    &cmake::INSTANCE,
+    &gradle::INSTANCE,
 ];
