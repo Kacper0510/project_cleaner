@@ -1,3 +1,4 @@
+use file_id::FileId;
 use jwalk::WalkDir;
 use size::Size;
 use std::{
@@ -5,7 +6,6 @@ use std::{
     collections::HashSet,
     iter::Sum,
     ops::Add,
-    os::linux::fs::MetadataExt,
     path::PathBuf,
     sync::mpsc::Sender,
     thread::{self, available_parallelism, JoinHandle},
@@ -44,10 +44,7 @@ impl Add for DirStats {
         };
 
         let last_mod = [self.last_mod, rhs.last_mod].iter().flatten().max().copied();
-        DirStats {
-            size,
-            last_mod,
-        }
+        DirStats { size, last_mod }
     }
 }
 
@@ -69,11 +66,11 @@ impl DirStats {
         if let Some(files_iter) = files_iter {
             let mut max_value: Option<SystemTime> = None;
             let mut sum_value: Option<u64> = None;
-            let mut visited: HashSet<u64> = HashSet::default();
+            let mut visited: HashSet<FileId> = HashSet::default();
             for file in files_iter {
                 let last_mod = file.metadata().ok().and_then(|m| m.modified().ok());
                 let size = file.metadata().ok().map(|m| m.len());
-                if visited.insert(file.metadata().unwrap().st_ino()) {
+                if visited.insert(file_id::get_file_id(file.path()).unwrap()) {
                     // inode ids needs to be unique
                     if let Some(size) = size {
                         sum_value = Some(if let Some(v) = sum_value { v + size } else { size })
@@ -83,15 +80,9 @@ impl DirStats {
                 max_value = if max_value < last_mod { last_mod } else { max_value };
             }
 
-            Self {
-                size: sum_value.map(Size::from_bytes),
-                last_mod: max_value,
-            }
+            Self { size: sum_value.map(Size::from_bytes), last_mod: max_value }
         } else {
-            Self {
-                size: None,
-                last_mod: None,
-            }
+            Self { size: None, last_mod: None }
         }
     }
 
