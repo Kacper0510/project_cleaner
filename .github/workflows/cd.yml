@@ -102,5 +102,5 @@ jobs:
     - name: "Artifact upload"
       uses: actions/upload-artifact@master
       with:
-        name: ${{ steps.bin.outputs.BIN_NAME }}
+        name: "${{ matrix.job.target }} ${{ steps.bin.outputs.BIN_NAME }}"
         path: ${{ steps.bin.outputs.BIN_PATH }}
