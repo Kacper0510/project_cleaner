@@ -10,9 +10,19 @@ on:
   push:
     tags:
       - '*'
-  pull_request:
 
 jobs:
+
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+      - id: set-matrix
+        run: |
+          TASKS=$(echo $(cat .github/workflows/matrix.json) | sed 's/ //g' )
+          echo "::set-output name=matrix::$TASKS"
 
   crate_metadata:
     name: Extract crate metadata
@@ -38,27 +48,14 @@ jobs:
   build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
-    needs: crate_metadata
+    needs: [matrix, crate_metadata]
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        job:
-          - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04, dpkg_arch: arm64,            use-cross: true }
-          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04, dpkg_arch: arm64,            use-cross: true }
-          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04, dpkg_arch: armhf,            use-cross: true }
-          - { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04, dpkg_arch: musl-linux-armhf, use-cross: true }
-          - { target: i686-pc-windows-msvc        , os: windows-2019,                                              }
-          - { target: i686-unknown-linux-gnu      , os: ubuntu-20.04, dpkg_arch: i686,             use-cross: true }
-          - { target: i686-unknown-linux-musl     , os: ubuntu-20.04, dpkg_arch: musl-linux-i686,  use-cross: true }
-          - { target: x86_64-apple-darwin         , os: macos-12,                                                  }
-          - { target: aarch64-apple-darwin        , os: macos-14,                                                  }
-          - { target: x86_64-pc-windows-gnu       , os: windows-2019,                                              }
-          - { target: x86_64-pc-windows-msvc      , os: windows-2019,                                              }
-          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, dpkg_arch: amd64,            use-cross: true }
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04, dpkg_arch: musl-linux-amd64, use-cross: true }
+        job: ${{ fromJson(needs.matrix.outputs.matrix) }}
     env:
       BUILD_CMD: cargo
-      
+
     steps:
     - name: Checkout source code
       uses: actions/checkout@v4
@@ -122,5 +119,37 @@ jobs:
     - name: "Artifact upload"
       uses: actions/upload-artifact@master
       with:
-        name: "${{ matrix.job.target }} ${{ steps.bin.outputs.BIN_NAME }}"
+        name: ${{ matrix.job.target }}
         path: ${{ steps.bin.outputs.BIN_PATH }}
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [build, crate_metadata]
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+    steps:
+    - name: Release
+      id: release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: ${{ needs.crate_metadata.outputs.version }}
+
+  upload:
+    name: Upload release assets
+    runs-on: ubuntu-latest
+    needs: [release, build, matrix]
+    strategy:
+      fail-fast: true
+      matrix:
+        job: ${{ fromJson(needs.matrix.outputs.matrix) }}
+    steps:
+    - name: Upload release assets
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./artifacts
+        asset_name: ${{ matrix.job.target }}
+        asset_content_type: application/octet-stream
+    
+    
