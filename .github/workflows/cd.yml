@@ -134,6 +134,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         name: ${{ needs.crate_metadata.outputs.version }}
+        tag_name: ${{ needs.crate_metadata.outputs.version }}
 
   upload:
     name: Upload release assets
