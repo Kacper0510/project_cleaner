@@ -2,7 +2,7 @@ use file_id::FileId;
 use jwalk::WalkDir;
 use size::Size;
 use std::{
-    cmp::Ordering,
+    cmp::{max, Ordering},
     collections::HashSet,
     iter::Sum,
     ops::Add,
@@ -104,7 +104,7 @@ impl DirStats {
 pub fn dir_stats_parallel(data: Vec<(usize, PathBuf)>, tx: Sender<(usize, DirStats)>) -> Vec<JoinHandle<()>> {
     let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(DEFAULT_THREAD_COUNT) / _CORE_MULTIPLIER;
     info!("Running dir stats with {} threads.", thread_count);
-    let chunk_size = data.len() / thread_count;
+    let chunk_size = max(data.len() / thread_count, data.len());
     let chunks: Vec<_> = data.chunks(chunk_size).map(|s| s.to_vec()).collect();
     trace!("Chunks: {:?}", chunks.iter().map(|c| c.len()).collect::<Vec<_>>());
 
