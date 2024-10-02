@@ -24,6 +24,9 @@ pub use color::IconColor;
 mod scanner;
 pub use scanner::Scanner;
 
+mod threading;
+pub use threading::{DEFAULT_THREAD_COUNT, _CORE_MULTIPLIER};
+
 /// Type for storing files inherited from parent directories.
 /// See [`MatchingState::inherited_files()`].
 type InheritedFiles = HashMap<TypeId, Vec<PathBuf>>;

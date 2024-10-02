@@ -11,7 +11,9 @@ use std::{
     thread::{self, available_parallelism, JoinHandle},
     time::SystemTime,
 };
-use tracing::{error, info};
+use tracing::{debug, error, info, trace};
+
+use crate::core::{DEFAULT_THREAD_COUNT, _CORE_MULTIPLIER};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct DirStats {
@@ -56,10 +58,13 @@ impl Sum for DirStats {
 
 impl DirStats {
     pub fn new(path: PathBuf) -> Self {
-        let files_iter = WalkDir::new(path)
+        debug!("Calculating stats for {:?}", path);
+        let files_iter = WalkDir::new(path.clone())
+            .parallelism(jwalk::Parallelism::Serial)
             .skip_hidden(false)
             .follow_links(false)
             .try_into_iter()
+            .map_err(|err| error!("WalkDir into iter error: {:?}", err))
             .ok()
             .map(|list| list.filter_map(|ele| ele.ok()).filter(|f| f.metadata().is_ok_and(|f| !f.is_symlink())));
 
@@ -80,8 +85,10 @@ impl DirStats {
                 max_value = if max_value < last_mod { last_mod } else { max_value };
             }
 
+            debug!("Stats for {:?}: size: {:?}, last_mod: {:?}", path, sum_value, max_value);
             Self { size: sum_value.map(Size::from_bytes), last_mod: max_value }
         } else {
+            error!("Got empty iterator for {:?}", path);
             Self { size: None, last_mod: None }
         }
     }
@@ -95,9 +102,11 @@ impl DirStats {
 }
 
 pub fn dir_stats_parallel(data: Vec<(usize, PathBuf)>, tx: Sender<(usize, DirStats)>) -> Vec<JoinHandle<()>> {
-    let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(4);
+    let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(DEFAULT_THREAD_COUNT) / _CORE_MULTIPLIER;
     info!("Running dir stats with {} threads.", thread_count);
-    let chunks: Vec<_> = data.chunks(thread_count).map(|s| s.to_vec()).collect();
+    let chunk_size = data.len() / thread_count;
+    let chunks: Vec<_> = data.chunks(chunk_size).map(|s| s.to_vec()).collect();
+    trace!("Chunks: {:?}", chunks.iter().map(|c| c.len()).collect::<Vec<_>>());
 
     chunks
         .into_iter()
@@ -105,7 +114,8 @@ pub fn dir_stats_parallel(data: Vec<(usize, PathBuf)>, tx: Sender<(usize, DirSta
             let tx = tx.clone();
             thread::spawn(move || {
                 for (i, ele) in chunk {
-                    let res = tx.send((i, DirStats::new(ele)));
+                    let stats = DirStats::new(ele);
+                    let res = tx.send((i, stats));
                     if res.is_err() {
                         error!("Failed to send");
                     }

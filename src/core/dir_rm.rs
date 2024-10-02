@@ -4,12 +4,16 @@ use std::{
     thread::{self, available_parallelism, JoinHandle},
 };
 
-use tracing::{error, info};
+use tracing::{error, info, trace};
+
+use crate::core::{DEFAULT_THREAD_COUNT, _CORE_MULTIPLIER};
 
 pub fn dir_rm_parallel(data: Vec<PathBuf>) -> Vec<JoinHandle<()>> {
-    let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(4);
+    let thread_count = available_parallelism().map(|x| x.get()).unwrap_or(DEFAULT_THREAD_COUNT) / _CORE_MULTIPLIER;
     info!("Running dir rm with {} threads.", thread_count);
-    let chunks: Vec<_> = data.chunks(thread_count).map(|s| s.to_vec()).collect();
+    let chunk_size = data.len() / thread_count;
+    let chunks: Vec<_> = data.chunks(chunk_size).map(|s| s.to_vec()).collect();
+    trace!("Chunks: {:?}", chunks.iter().map(|c| c.len()).collect::<Vec<_>>());
 
     chunks
         .into_iter()
