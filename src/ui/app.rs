@@ -105,6 +105,11 @@ impl App {
             self.handle = vec![];
             self.state = match self.state {
                 AppState::Scanning => {
+                    info!(
+                        "UI scan finished with {} matches which created {} records.",
+                        self.table.idx - 1,
+                        self.table.data.len()
+                    );
                     self.handle = dir_stats_parallel(
                         self.table
                             .data
@@ -117,7 +122,11 @@ impl App {
                     );
                     AppState::Calculating
                 },
-                AppState::Done | AppState::Calculating => AppState::Done,
+                AppState::Calculating => {
+                    info!("UI stats calculation finished.");
+                    AppState::Done
+                },
+                AppState::Done => AppState::Done,
             }
         }
 

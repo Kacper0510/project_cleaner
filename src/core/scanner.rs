@@ -6,7 +6,7 @@ use std::{
     path::{Path, PathBuf},
     sync::mpsc::Sender,
 };
-use tracing::{error, info, trace};
+use tracing::{debug, error, info, trace};
 
 /// Directory scanner cache for storing inherited files and a channel to send matches to.
 #[derive(Debug, Default, Clone)]
@@ -85,7 +85,7 @@ impl Scanner {
             .root_read_dir_state(ScannerCache::new(self.sender))
             .skip_hidden(false)
             .process_read_dir(move |_depth, path, read_dir_state, children| {
-                trace!("Scanning directory: {:#?}", path);
+                debug!("Scanning directory: {:#?}", path);
 
                 if path.file_name().is_some_and(|name| read_dir_state.marked_to_be_dangerous.contains(name)) {
                     read_dir_state.dangerous = true;
