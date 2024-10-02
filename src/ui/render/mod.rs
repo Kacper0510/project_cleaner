@@ -35,6 +35,7 @@ pub fn render(app: &mut App, frame: &mut Frame) {
             PopUpKind::Exit => {
                 popup::exit::render(app, frame, frame.area());
             },
+            PopUpKind::Sort => {},
         },
         PopUpState::Closed => {},
     }

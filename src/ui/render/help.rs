@@ -37,12 +37,21 @@ fn construct_help(app: &App) -> Vec<String> {
     match &app.popup_state {
         PopUpState::Open(kind) => {
             res.push((10, "Close [q]"));
-            if *kind == PopUpKind::Info {
-                res.push((0, "Scroll [↑↓]"));
+
+            match kind {
+                PopUpKind::Info => {
+                    res.push((0, "Scroll [↑↓]"));
+                },
+                PopUpKind::Sort => {
+                    res.push((0, "Switch []"));
+                    res.push((1, "Select [˽]"));
+                },
+                PopUpKind::Delete(_) | PopUpKind::Exit => {},
             }
         },
         PopUpState::Closed => {
             res.push((0, "Scroll [↑↓]"));
+            res.push((7, "Sort [s]"));
             res.push((10, "Exit [q]"));
 
             if app.state == AppState::Done {

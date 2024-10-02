@@ -12,24 +12,37 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
 
     match &app.popup_state {
         PopUpState::Open(kind) => match key_event.code {
-            KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('i') => app.hide_info(),
+            KeyCode::Esc | KeyCode::Char('q') => app.close_popup(),
+
+            KeyCode::Char('i') if *kind == PopUpKind::Info => app.close_popup(),
 
             KeyCode::Char('c') | KeyCode::Char('C') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
                 app.quit()
             },
 
-            KeyCode::Char(' ') | KeyCode::Enter | KeyCode::Char('n') => match kind {
-                PopUpKind::Info => {},
-                PopUpKind::Delete(_) | PopUpKind::Exit => app.hide_info(),
+            KeyCode::Enter | KeyCode::Char('n') => match kind {
+                PopUpKind::Info | PopUpKind::Sort => {},
+                PopUpKind::Delete(_) | PopUpKind::Exit => app.close_popup(),
             },
             KeyCode::Char('y') => match kind {
-                PopUpKind::Info => {},
+                PopUpKind::Info | PopUpKind::Sort => {},
                 PopUpKind::Delete(_) => app.confirm_delete(),
                 PopUpKind::Exit => app.force_quit(),
             },
 
             KeyCode::Up if *kind == PopUpKind::Info => app.scroll_up(),
             KeyCode::Down if *kind == PopUpKind::Info => app.scroll_down(),
+
+            KeyCode::Char('s') if *kind == PopUpKind::Sort => app.close_popup(),
+
+            KeyCode::Left if *kind == PopUpKind::Sort => app.sort_left(),
+            KeyCode::Right if *kind == PopUpKind::Sort => app.sort_right(),
+
+            KeyCode::Char(' ') => match kind {
+                PopUpKind::Sort => app.sort_toggle(),
+                PopUpKind::Info => {},
+                PopUpKind::Delete(_) | PopUpKind::Exit => app.close_popup(),
+            },
 
             _ => {},
         },
@@ -56,6 +69,8 @@ pub fn handle_key_events(key_event: KeyEvent, app: &mut App) -> AppResult<()> {
                 KeyCode::Char('d') => app.delete(),
                 // Info
                 KeyCode::Char('i') => app.show_info(),
+                // Sort
+                KeyCode::Char('s') => app.focus_sort(),
                 // Select
                 KeyCode::Char(' ') => app.toggle_select(),
 
