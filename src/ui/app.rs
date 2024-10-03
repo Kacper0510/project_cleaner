@@ -181,6 +181,10 @@ impl App {
         self.run();
     }
 
+    pub fn focus_sort(&mut self) {
+        self.popup_state = PopUpState::Open(PopUpKind::Sort);
+    }
+
     pub fn show_info(&mut self) {
         if let Some(selected) = self.table.state.selected() {
             self.popup_state = PopUpState::Open(PopUpKind::Info);
@@ -188,10 +192,31 @@ impl App {
         }
     }
 
-    pub fn hide_info(&mut self) {
+    pub fn close_popup(&mut self) {
+        match &self.popup_state {
+            PopUpState::Open(kind) => match kind {
+                PopUpKind::Info => {
+                    self.scroll_state.scroll_to_top();
+                    self.info_path = None;
+                },
+                PopUpKind::Sort => {},
+                PopUpKind::Delete(_) | PopUpKind::Exit => {},
+            },
+            PopUpState::Closed => {},
+        }
         self.popup_state = PopUpState::Closed;
-        self.scroll_state.scroll_to_top();
-        self.info_path = None;
+    }
+
+    pub fn sort_left(&mut self) {
+        self.table.sort_left();
+    }
+
+    pub fn sort_right(&mut self) {
+        self.table.sort_right();
+    }
+
+    pub fn sort_toggle(&mut self) {
+        self.table.sort_toggle();
     }
 
     pub fn is_highlighted(&self) -> bool {

@@ -8,6 +8,7 @@ pub enum PopUpState {
 pub enum PopUpKind {
     Info,
     Delete(DeletePopUpKind),
+    Sort,
     Exit,
 }
 

@@ -1,7 +1,11 @@
-use crate::core::{CommentedLang, DirStats, MatchData};
+use crate::core::{CommentedLang, DirStats, Lang, MatchData};
 use ratatui::widgets::TableState;
 use size::Size;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 #[derive(Debug, Clone)]
 pub struct MatchGroup {
@@ -14,6 +18,29 @@ pub struct MatchGroup {
 impl MatchGroup {
     pub fn stats(&self) -> DirStats {
         self.matches.iter().map(|ele| ele.dir_stats).sum()
+    }
+
+    pub fn path(&self) -> PathBuf {
+        self.group_path.clone()
+    }
+
+    pub fn size(&self) -> Size {
+        self.stats().size.unwrap_or(Size::from_bytes(0))
+    }
+
+    pub fn last_mod(&self) -> SystemTime {
+        self.stats().last_mod.unwrap_or(SystemTime::UNIX_EPOCH)
+    }
+
+    pub fn lang(&self) -> String {
+        self.get_icons().iter().map(|ele| ele.name).collect()
+    }
+
+    pub fn get_icons(&self) -> Vec<Lang> {
+        let icons: HashSet<_> = self.matches.iter().flat_map(|e| &e.lang).map(|e| e.lang.clone()).collect();
+        let mut icons: Vec<_> = icons.into_iter().collect();
+        icons.sort();
+        icons
     }
 }
 
@@ -36,7 +63,19 @@ pub struct TableData {
     pub idx: usize,
     pub state: TableState,
     pub data: Vec<MatchGroup>,
+    pub sort_by: Field,
+    pub ascending: bool,
+    pub selected: Field,
     cleanable_space: Size,
+}
+
+#[derive(Debug, Clone, PartialEq, Copy, Default)]
+pub enum Field {
+    Path,
+    Lang,
+    #[default]
+    Size,
+    LastMod,
 }
 
 impl TableData {
@@ -84,13 +123,50 @@ impl TableData {
             None
         };
 
-        self.data.sort_by_key(MatchGroup::stats);
+        match self.sort_by {
+            Field::Path => self.data.sort_by_key(MatchGroup::path),
+            Field::Lang => self.data.sort_by_key(MatchGroup::lang),
+            Field::Size => self.data.sort_by_key(MatchGroup::size),
+            Field::LastMod => self.data.sort_by_key(MatchGroup::last_mod),
+        };
+
+        if !self.ascending {
+            self.data.reverse();
+        }
 
         if let Some(path) = path {
             if let Some(idx) = self.data.iter().position(|ele| ele.group_path == path) {
                 self.state.select(Some(idx))
             }
         }
+    }
+
+    pub fn sort_toggle(&mut self) {
+        if self.selected == self.sort_by {
+            self.ascending = !self.ascending;
+        } else {
+            self.sort_by = self.selected;
+            self.ascending = false;
+        }
+        self.sort();
+    }
+
+    pub fn sort_left(&mut self) {
+        self.selected = match self.selected {
+            Field::Lang => Field::Size,
+            Field::Path => Field::Lang,
+            Field::LastMod => Field::Path,
+            Field::Size => Field::LastMod,
+        };
+    }
+
+    pub fn sort_right(&mut self) {
+        self.selected = match self.selected {
+            Field::Lang => Field::Path,
+            Field::Path => Field::LastMod,
+            Field::LastMod => Field::Size,
+            Field::Size => Field::Lang,
+        };
     }
 
     pub fn get_by_path(&self, path: &Path) -> Option<&MatchGroup> {
