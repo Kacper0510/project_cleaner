@@ -24,8 +24,10 @@ pub use color::IconColor;
 mod scanner;
 pub use scanner::Scanner;
 
-mod threading;
-pub use threading::{DEFAULT_THREAD_COUNT, _CORE_MULTIPLIER};
+const DEFAULT_THREAD_COUNT: usize = 1;
+const PERCENTAGE_OF_USED_CORES: usize = 50;
+
+const _CORE_MULTIPLIER: usize = 100 / PERCENTAGE_OF_USED_CORES; // Don't modify this line
 
 /// Type for storing files inherited from parent directories.
 /// See [`MatchingState::inherited_files()`].
