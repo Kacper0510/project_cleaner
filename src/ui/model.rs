@@ -69,18 +69,13 @@ pub struct TableData {
     cleanable_space: Size,
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Copy, Default)]
 pub enum Field {
     Path,
     Lang,
+    #[default]
     Size,
     LastMod,
-}
-
-impl Default for Field {
-    fn default() -> Self {
-        Field::Size
-    }
 }
 
 impl TableData {
