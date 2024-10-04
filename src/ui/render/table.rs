@@ -62,7 +62,7 @@ fn make_header(table: &TableData, sort_focused: bool) -> Row {
                 if selected_index == i && sort_focused {
                     Style::default().fg(Color::Cyan).bg(Color::White)
                 } else {
-                    Style::default()
+                    Style::default().fg(Color::White)
                 },
             )
         })

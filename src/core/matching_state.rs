@@ -53,35 +53,45 @@ impl<'entries> MatchingState<'entries> {
     pub(super) fn process_collected_data(&mut self, include_dangerous: bool) -> Result<(), SendError<MatchData>> {
         for (entry_name, (entry, params)) in self.contents.drain() {
             let accumulated_params: MatchParameters = params.into_iter().sum();
-            trace!("Processing entry: {:#?} with weight: {:#?}", entry_name, accumulated_params.weight);
+            trace!(
+                "Processing entry: {:#?} in {:#?} with weight: {:#?}",
+                entry_name,
+                self.parent_path,
+                accumulated_params.weight
+            );
             match accumulated_params.weight {
                 nw @ ..=-1 if !accumulated_params.dangerous => {
-                    info!("Negative weight of {}, but not dangerous: {:#?}", nw, entry_name);
+                    info!("Negative weight of {}, but not dangerous: {:#?} in {:#?}", nw, entry_name, self.parent_path);
                 },
                 nw @ ..=-1 if include_dangerous => {
                     if self.cache.dangerous {
-                        warn!("{:#?} is already dangerous!", entry_name);
+                        warn!("{:#?} in {:#?} is already dangerous!", entry_name, self.parent_path);
                     } else if entry.file_type.is_dir() {
-                        info!("Negative weight of {}, marking as dangerous: {:#?}", nw, entry_name);
+                        info!(
+                            "Negative weight of {}, marking as dangerous: {:#?} in {:#?}",
+                            nw, entry_name, self.parent_path
+                        );
                         self.cache.marked_to_be_dangerous.insert(entry_name);
                     }
                 },
                 nw @ ..=-1 => {
-                    info!("Negative weight of {}, skipping children: {:#?}", nw, entry_name);
+                    info!("Negative weight of {}, skipping children: {:#?} in {:#?}", nw, entry_name, self.parent_path);
                     entry.read_children_path = None;
                 },
-                0 => (),
+                0 => {
+                    info!(
+                        "Zero weight of children: {:#?} in {:#?}; Params: {:#?}",
+                        entry_name, self.parent_path, accumulated_params
+                    );
+                },
                 pw @ 1.. => {
                     entry.read_children_path = None;
                     let data = MatchData {
                         path: entry.path(),
                         group: self.parent_path.to_owned(),
-                        params: MatchParameters {
-                            dangerous: self.cache.dangerous,
-                            ..accumulated_params
-                        },
+                        params: MatchParameters { dangerous: self.cache.dangerous, ..accumulated_params },
                     };
-                    info!("Positive weight of {}, sending match: {:#?}", pw, entry_name);
+                    info!("Positive weight of {}, sending match: {:#?} in {:#?}", pw, entry_name, self.parent_path);
                     debug!("{:#?}", data);
                     self.cache.sender.as_ref().unwrap().send(data)?;
                 },
@@ -158,12 +168,20 @@ impl<'entries> MatchingState<'entries> {
     /// The `comment` parameter is used to describe the match and is displayed to the user.
     /// Additional match options may be changed by calling methods of the returned reference.
     pub fn add_match<S>(&mut self, name: &S, comment: &str) -> &mut MatchParameters
-    where S: AsRef<OsStr> + ?Sized + std::fmt::Debug {
+    where
+        S: AsRef<OsStr> + ?Sized + std::fmt::Debug,
+    {
         let new = MatchParameters::new(CommentedLang {
             lang: self.current_heuristic.unwrap().info(),
             comment: comment.to_owned(),
         });
         if let Some((_, v)) = self.contents.get_mut(OsStr::new(name)) {
+            trace!(
+                "Added match {:#?} , {:#?} with {:#?}",
+                self.parent_path,
+                name,
+                self.current_heuristic.unwrap().info().name
+            );
             v.push(new);
             v.last_mut().unwrap()
         } else {

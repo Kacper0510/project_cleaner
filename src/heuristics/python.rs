@@ -1,6 +1,5 @@
 use crate::heuristic;
 
-// TODO: Add .venv heuristic
 
 heuristic!(Python, "", "py", IconColor(32), state, {
     if state.has_directory("__pycache__").is_some() {
